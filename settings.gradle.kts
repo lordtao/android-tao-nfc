@@ -21,4 +21,4 @@ dependencyResolutionManagement {
 
 rootProject.name = "NFC SDK"
 include(":app")
- 
+include(":sdk")
