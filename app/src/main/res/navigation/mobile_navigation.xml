@@ -9,17 +9,17 @@
         android:id="@+id/navigation_status"
         android:name="ua.at.tsvetkov.nfcsdk.ui.status.StatusFragment"
         android:label="@string/title_status"
-        tools:layout="@layout/fragment_home" />
+        tools:layout="@layout/fragment_status" />
 
     <fragment
         android:id="@+id/navigation_read"
         android:name="ua.at.tsvetkov.nfcsdk.ui.read.ReadFragment"
         android:label="@string/title_read"
-        tools:layout="@layout/fragment_dashboard" />
+        tools:layout="@layout/fragment_read" />
 
     <fragment
         android:id="@+id/navigation_write"
         android:name="ua.at.tsvetkov.nfcsdk.ui.write.WriteFragment"
         android:label="@string/title_write"
-        tools:layout="@layout/fragment_notifications" />
+        tools:layout="@layout/fragment_write" />
 </navigation>

@@ -7,11 +7,11 @@ import android.view.ViewGroup
 import android.widget.TextView
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProvider
-import ua.at.tsvetkov.nfcsdk.databinding.FragmentHomeBinding
+import ua.at.tsvetkov.nfcsdk.databinding.FragmentStatusBinding
 
 class StatusFragment : Fragment() {
 
-    private var _binding: FragmentHomeBinding? = null
+    private var _binding: FragmentStatusBinding? = null
 
     // This property is only valid between onCreateView and
     // onDestroyView.
@@ -25,10 +25,10 @@ class StatusFragment : Fragment() {
         val statusViewModel =
             ViewModelProvider(this).get(StatusViewModel::class.java)
 
-        _binding = FragmentHomeBinding.inflate(inflater, container, false)
+        _binding = FragmentStatusBinding.inflate(inflater, container, false)
         val root: View = binding.root
 
-        val textView: TextView = binding.textHome
+        val textView: TextView = binding.textStatusTitle
         statusViewModel.text.observe(viewLifecycleOwner) {
             textView.text = it
         }

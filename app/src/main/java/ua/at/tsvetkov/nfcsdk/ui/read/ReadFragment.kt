@@ -7,11 +7,11 @@ import android.view.ViewGroup
 import android.widget.TextView
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProvider
-import ua.at.tsvetkov.nfcsdk.databinding.FragmentDashboardBinding
+import ua.at.tsvetkov.nfcsdk.databinding.FragmentReadBinding
 
 class ReadFragment : Fragment() {
 
-    private var _binding: FragmentDashboardBinding? = null
+    private var _binding: FragmentReadBinding? = null
 
     // This property is only valid between onCreateView and
     // onDestroyView.
@@ -25,10 +25,10 @@ class ReadFragment : Fragment() {
         val readViewModel =
             ViewModelProvider(this).get(ReadViewModel::class.java)
 
-        _binding = FragmentDashboardBinding.inflate(inflater, container, false)
+        _binding = FragmentReadBinding.inflate(inflater, container, false)
         val root: View = binding.root
 
-        val textView: TextView = binding.textDashboard
+        val textView: TextView = binding.textReadTitle
         readViewModel.text.observe(viewLifecycleOwner) {
             textView.text = it
         }
