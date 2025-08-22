@@ -5,6 +5,14 @@
     <color name="purple_700">#FF3700B3</color>
     <color name="teal_200">#FF03DAC5</color>
     <color name="teal_700">#FF018786</color>
+
+    <color name="nfcColorPrimary">#7F9CF5</color>
+    <color name="nfcColorPrimaryVariant">#5271FF</color>
+    <color name="nfcColorOnPrimary">#FFFFFF</color>
+    <color name="nfcColorSecondary">#A8A832</color>
+    <color name="nfcColorSecondaryVariant">#6B6B20</color>
+    <color name="nfcColorOnSecondary">#000000</color>
+
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
 </resources>
