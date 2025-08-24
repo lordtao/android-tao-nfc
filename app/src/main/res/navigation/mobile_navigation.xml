@@ -3,13 +3,7 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/mobile_navigation"
-    app:startDestination="@+id/navigation_status">
-
-    <fragment
-        android:id="@+id/navigation_status"
-        android:name="ua.at.tsvetkov.nfcsdk.ui.status.StatusFragment"
-        android:label="@string/title_status"
-        tools:layout="@layout/fragment_status" />
+    app:startDestination="@+id/navigation_read">
 
     <fragment
         android:id="@+id/navigation_read"

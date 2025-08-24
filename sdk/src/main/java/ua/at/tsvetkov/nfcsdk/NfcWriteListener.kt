@@ -10,5 +10,4 @@ package ua.at.tsvetkov.nfcsdk
 interface NfcWriteListener {
     fun onNfcTagWritten()
     fun onNfcWriteError(error: NfcError)
-    fun onNfcWriteTagNotSupported(error: NfcError) // Если метка не поддерживает NDEF или неформатируема
 }

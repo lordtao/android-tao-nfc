@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <menu xmlns:android="http://schemas.android.com/apk/res/android">
 
-    <item
-        android:id="@+id/navigation_status"
-        android:icon="@drawable/ic_status"
-        android:title="@string/title_status" />
+<!--    <item-->
+<!--        android:id="@+id/navigation_status"-->
+<!--        android:icon="@drawable/ic_status"-->
+<!--        android:title="@string/title_status" />-->
 
     <item
         android:id="@+id/navigation_read"

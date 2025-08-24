@@ -10,6 +10,6 @@ import android.nfc.NdefRecord
  * Интерфейс для получения обратного вызова при сканировании NFC-метки.
  */
 interface NfcScanListener {
-    fun onNfcTagScanned(message: Array<out NdefRecord?>?)
+    fun onNfcTagScanned(message: Array<out NdefRecord>)
     fun onNfcScanError(error: NfcError)
 }
