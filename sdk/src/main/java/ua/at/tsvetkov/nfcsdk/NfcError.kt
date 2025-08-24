@@ -4,8 +4,9 @@ package ua.at.tsvetkov.nfcsdk
  * Created by Alexandr Tsvetkov on 22.08.2025.
  */
 enum class NfcError(val message: String) {
+    ERROR_PARSING_NDEF_TEXT_RECORD("Error parsing NDEF text record"),
+    UNSUPPORTED_NDFE_RECORD_TYPE("This handler does not support this NDEF record type.."),
     EMPTY_DATA("Data to write cannot be empty."),
-    TAG_NOT_FOUND("NFC Tag not found in intent."),
     UNKNOWN_NFC_ACTION("Unknown NFC action."),
     NDEF_FORMATTABLE_BUT_EMPTY("Tag is NDEF formattable but contains no NDEF message."),
     NDEF_NOT_SUPPORTED("Tag does not support NDEF."),

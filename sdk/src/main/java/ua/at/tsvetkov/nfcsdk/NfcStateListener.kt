@@ -8,6 +8,7 @@ package ua.at.tsvetkov.nfcsdk
  * Interface for receiving new Nfc state.
  */
 interface NfcStateListener {
+    fun onNfcStarted()
     fun onNfcStateChanged(state: Int)
     fun onError(error: NfcAdminError)
 }

@@ -10,8 +10,8 @@ import ua.at.tsvetkov.nfcsdk.NfcWriteListener
  * Created by Alexandr Tsvetkov on 24.08.2025.
  */
 abstract class NfcHandler<T>(
-    private var nfcScanListener: NfcScanListener<T>? = null,
-    private var nfcWriteListener: NfcWriteListener? = null,
+    protected var nfcScanListener: NfcScanListener<T>? = null,
+    protected var nfcWriteListener: NfcWriteListener? = null,
 ) {
 
     var isEnabled: Boolean = true
@@ -19,17 +19,13 @@ abstract class NfcHandler<T>(
     var preparedNdefMessage: NdefMessage? = null
 
     fun onNfcTagScanned(message: Array<out NdefRecord>) {
-        val result = parse(message)
-        nfcScanListener?.onNfcTagScanned(result)
+        parse(message)?.let { result ->
+            nfcScanListener?.onNfcTagScanned(result)
+        }
     }
 
     fun onNfcTagWritten() {
         nfcWriteListener?.onNfcTagWritten()
-    }
-
-    fun onError(error: NfcError) {
-        nfcScanListener?.onNfcScanError(error)
-        nfcWriteListener?.onNfcWriteError(error)
     }
 
     fun onScanError(error: NfcError) {
@@ -40,8 +36,17 @@ abstract class NfcHandler<T>(
         nfcWriteListener?.onNfcWriteError(error)
     }
 
-    abstract fun parse(records: Array<out NdefRecord>): T
+    /**
+     *
+     */
+    abstract fun parse(records: Array<out NdefRecord>): T?
 
+    /**
+     * Prepares data for writing to an NFC tag.
+     * This method must be called before the tag is brought near the device for writing.
+     *
+     * @param data Text to write to the label.
+     **/
     abstract fun prepareToWrite(data: T): NdefMessage
 
 }

@@ -35,6 +35,9 @@ kotlin {
 
 dependencies {
     implementation(project(":sdk"))
+    implementation(files("${rootProject.projectDir}/libs/taocore.aar"))
+    implementation(files("${rootProject.projectDir}/libs/taolog.aar"))
+
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.appcompat)
     implementation(libs.material)

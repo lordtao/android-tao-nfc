@@ -11,7 +11,6 @@ import android.content.Intent
 import android.content.IntentFilter
 import android.nfc.FormatException
 import android.nfc.NdefMessage
-import android.nfc.NdefRecord
 import android.nfc.NfcAdapter
 import android.nfc.Tag
 import android.nfc.tech.Ndef
@@ -26,15 +25,16 @@ import java.io.IOException
  *
  * @param activity Activity that will be used for NFC interactions. Required for Foreground Dispatch System and BroadcastReceiver.
  * @param nfcStateListener Listener to receive NFC state.
- * @param additionalIntentFilters Additionally you can add intent filters like ACTION_TAG_DISCOVERED and ACTION_TECH_DISCOVERED
+ * @param nfcIntentFilters Additionally you can add intent filters like ACTION_TAG_DISCOVERED and ACTION_TECH_DISCOVERED
  *                 to handle specific types of tags.
  *                 These can be added if non-NDEF tags or tags with specific technologies need to be processed.
  */
 class NfcAdmin(
     private val activity: Activity,
+    private val nfcIntentFilters: Array<IntentFilter> = emptyArray<IntentFilter>(),
+    private val nfcTechListArray: Array<Array<String>>? = null,
     private var nfcStateListener: NfcStateListener? = null,
     private var isAdminLogEnabled: Boolean = false,
-    private val additionalIntentFilters: List<IntentFilter>? = null,
 ) {
 
     private val nfcAdapter: NfcAdapter? by lazy { NfcAdapter.getDefaultAdapter(activity) }
@@ -46,43 +46,41 @@ class NfcAdmin(
             if (intent?.action == NfcAdapter.ACTION_ADAPTER_STATE_CHANGED) {
                 val state = intent.getIntExtra(NfcAdapter.EXTRA_ADAPTER_STATE, NfcAdapter.STATE_OFF)
                 nfcStateListener?.onNfcStateChanged(state)
-//                when (state) {
-//                    NfcAdapter.STATE_ON -> {
-//                        // Здесь можно добавить логику для действий при включении NFC
-//                        // Например, автоматически вызывать nfcManager.enableForegroundDispatch()
-//                        // если это соответствует логике вашего приложения.
-//                    }
-//                    NfcAdapter.STATE_OFF -> {
-//                        // Здесь можно добавить логику для действий при выключении NFC
-//                        // Например, информировать пользователя или отключать связанные функции.
-//                    }
-//                    NfcAdapter.STATE_TURNING_ON -> {
-//                        // NFC включается, можно показать индикатор загрузки
-//                    }
-//                    NfcAdapter.STATE_TURNING_OFF -> {
-//                        // NFC выключается
-//                    }
-//                }
             }
         }
     }
 
     /**
-     * Проверяет, доступен ли NFC на устройстве.
+     * Checks if NFC is available on the device.
      */
     fun isNfcAvailable(): Boolean = nfcAdapter != null
 
     /**
-     * Проверяет, включен ли NFC на устройстве.
+     * Checks if NFC is enabled on the device.
      */
     fun isNfcEnabled(): Boolean = nfcAdapter?.isEnabled == true
 
+    /**
+     * Add new NfcHandler
+     */
     fun addHandler(handler: NfcHandler<*>) {
         handlers.add(handler)
     }
 
+    /**
+     * Remove NfcHandler
+     */
     fun removeHandler(handler: NfcHandler<*>) {
         handlers.remove(handler)
+    }
+
+    fun registerStateReceiver() {
+        val filter = IntentFilter(NfcAdapter.ACTION_ADAPTER_STATE_CHANGED)
+        activity.registerReceiver(nfcStateReceiver, filter)
+    }
+
+    fun unregisterNfcStateReceiver() {
+        activity.unregisterReceiver(nfcStateReceiver)
     }
 
     /**
@@ -92,11 +90,13 @@ class NfcAdmin(
      */
     fun enableForegroundDispatch() {
         if (nfcAdapter == null) {
-            onAdminError(NfcAdminError.NFC_ADAPTER_IS_NOT_AVAILABLE, "Foreground dispatch not enabled.")
+            if (isAdminLogEnabled) Log.w("${NfcAdminError.NFC_ADAPTER_IS_NOT_AVAILABLE}. Foreground dispatch not enabled.")
+            nfcStateListener?.onError(NfcAdminError.NFC_ADAPTER_IS_NOT_AVAILABLE)
             return
         }
-        if (nfcAdapter?.isEnabled != false) {
-            onAdminError(NfcAdminError.NFC_ADAPTER_IS_NOT_ENABLED, "Foreground dispatch not enabled.")
+        if (nfcAdapter?.isEnabled == false) {
+            if (isAdminLogEnabled) Log.w("${NfcAdminError.NFC_ADAPTER_IS_NOT_ENABLED.message}. Foreground dispatch not enabled.")
+            nfcStateListener?.onError(NfcAdminError.NFC_ADAPTER_IS_NOT_ENABLED)
             return
         }
         try {
@@ -108,39 +108,15 @@ class NfcAdmin(
             }
             val pendingIntent = PendingIntent.getActivity(activity, 0, intent, pendingIntentFlags)
 
-            // Фильтр для NDEF обнаруженных меток
-            val ndefIntentFilter = IntentFilter(NfcAdapter.ACTION_NDEF_DISCOVERED).apply {
-                try {
-                    addDataType("*/*") // Принимаем любые NDEF-совместимые типы данных
-                } catch (e: IntentFilter.MalformedMimeTypeException) {
-                    onAdminError(NfcAdminError.MALFORMED_MIME_TYPE, e, "Failed to add NDEF data type")
-                }
-            }
+            nfcAdapter?.enableForegroundDispatch(activity, pendingIntent, nfcIntentFilters, nfcTechListArray)
 
-
-            val intentFiltersArray = if (!additionalIntentFilters.isNullOrEmpty()) {
-                val combinedFilters = mutableListOf(ndefIntentFilter)
-                combinedFilters.addAll(additionalIntentFilters)
-                combinedFilters.toTypedArray()
-            } else {
-                arrayOf(ndefIntentFilter)
-            }
-
-            // Технологии, которые мы хотим обрабатывать (Ndef и NdefFormatable для записи)
-            val techListsArray = arrayOf(
-                arrayOf(Ndef::class.java.name),
-                arrayOf(NdefFormatable::class.java.name)
-            )
-
-            nfcAdapter?.enableForegroundDispatch(activity, pendingIntent, intentFiltersArray, techListsArray)
-
-            // Registering a BroadcastReceiver to track changes in the state of the NFC adapter
-            val filter = IntentFilter(NfcAdapter.ACTION_ADAPTER_STATE_CHANGED)
-            activity.registerReceiver(nfcStateReceiver, filter)
-
-            Log.d("Foreground dispatch is ON.")
+            if (isAdminLogEnabled) Log.d("Foreground dispatch is ON.")
+            nfcStateListener?.onNfcStarted()
         } catch (e: Exception) {
-            onAdminError(NfcAdminError.ERROR_WHEN_TURNING_ON_FOREGROUND_DISPATCH, e)
+            if (isAdminLogEnabled) {
+                Log.e("${NfcAdminError.ERROR_WHEN_TURNING_ON_FOREGROUND_DISPATCH.message}: ${e.message}", e)
+            }
+            nfcStateListener?.onError(NfcAdminError.ERROR_WHEN_TURNING_ON_FOREGROUND_DISPATCH)
         }
     }
 
@@ -150,13 +126,13 @@ class NfcAdmin(
      */
     fun disableForegroundDispatch() {
         try {
-            // Unregister BroadcastReceiver to avoid memory leaks
-            activity.unregisterReceiver(nfcStateReceiver)
-
             nfcAdapter?.disableForegroundDispatch(activity)
-            Log.d("Foreground dispatch is OFF.")
+            if (isAdminLogEnabled) Log.d("Foreground dispatch is OFF.")
         } catch (e: Exception) {
-            onAdminError(NfcAdminError.ERROR_WHILE_SHUTTING_DOWN_FOREGROUND_DISPATCH, e)
+            if (isAdminLogEnabled) {
+                Log.e("${NfcAdminError.ERROR_WHILE_SHUTTING_DOWN_FOREGROUND_DISPATCH.message}: ${e.message}", e)
+            }
+            nfcStateListener?.onError(NfcAdminError.ERROR_WHILE_SHUTTING_DOWN_FOREGROUND_DISPATCH)
         }
     }
 
@@ -166,6 +142,7 @@ class NfcAdmin(
      */
     fun onNewIntentInActivity(intent: Intent) {
         val action = intent.action
+//        if (action == Intent.ACTION_MAIN) return // Ignore main action
         Log.d("Received Intent: $action")
 
         if (NfcAdapter.ACTION_NDEF_DISCOVERED == action ||
@@ -179,70 +156,25 @@ class NfcAdmin(
                 intent.getParcelableExtra(NfcAdapter.EXTRA_TAG)
             }
             if (tagFromIntent == null) {
-                onError(NfcError.TAG_NOT_FOUND)
+                if (isAdminLogEnabled) Log.w(NfcAdminError.TAG_NOT_FOUND.message)
+                nfcStateListener?.onError(NfcAdminError.TAG_NOT_FOUND)
                 return
             }
 
-            // Попытка записи, если есть данные для записи
             handlers
                 .filter { it.isEnabled }
                 .forEach {
-                    it.preparedNdefMessage?.let { message ->
+                    it.preparedNdefMessage?.let { message -> // Attempt to write if there is data to write
                         writeNdefMessageToTag(message, tagFromIntent)
+                        it.preparedNdefMessage = null // Reset the message after attempting to write
                     } ?: run {
                         readNdefMessageFromTag(tagFromIntent, it)
                     }
                 }
         } else {
-            Log.w("Unknown NFC action: $action")
-            onScanError(NfcError.UNKNOWN_NFC_ACTION)
+            if (isAdminLogEnabled) Log.e("${NfcError.UNKNOWN_NFC_ACTION.message}: $action")
+            passScanErrorToHandlers(NfcError.UNKNOWN_NFC_ACTION)
         }
-    }
-
-    private fun onScanSuccessful(records: Array<NdefRecord>) {
-        if(isAdminLogEnabled) Log.list(records.asList(), "Reads from NFC")
-        handlers.forEach { it.onNfcTagScanned(records) }
-    }
-
-    private fun onWrittenSuccessful() {
-        if(isAdminLogEnabled) Log.i("NDEF message successfully written.")
-        handlers.forEach { it.onNfcTagWritten() }
-    }
-
-    private fun onAdminError(error: NfcAdminError, message: String = "") {
-        if(isAdminLogEnabled) Log.w("${error.message}. $message")
-        nfcStateListener?.onError(error)
-    }
-
-    private fun onAdminError(error: NfcAdminError, e: Exception, message: String = "") {
-        if (message.isNotEmpty()) {
-            Log.e("${error.message}. $message: ${e.message}", e)
-        } else {
-            Log.e("${error.message}: ${e.message}", e)
-        }
-        nfcStateListener?.onError(error)
-    }
-
-    private fun onError(error: NfcError) {
-        handlers.forEach { it.onError(error) }
-    }
-
-    private fun onScanError(error: NfcError) {
-        handlers.forEach { it.onScanError(error) }
-    }
-
-    private fun onScanError(error: NfcError, e: Exception) {
-        if(isAdminLogEnabled) Log.e("${error.message}: ${e.message}", e)
-        handlers.forEach { it.onScanError(error) }
-    }
-
-    private fun onWriteError(error: NfcError) {
-        handlers.forEach { it.onWriteError(error) }
-    }
-
-    private fun onWriteError(error: NfcError, e: Exception) {
-        if(isAdminLogEnabled) Log.e("${error.message}: ${e.message}", e)
-        handlers.forEach { it.onWriteError(error) }
     }
 
     private fun readNdefMessageFromTag(tag: Tag, handler: NfcHandler<*>) {
@@ -251,9 +183,11 @@ class NfcAdmin(
             //Try reading as NDEF Formatable if there is a scan listener
             val ndefFormatable = NdefFormatable.get(tag)
             if (ndefFormatable != null) {
-                onScanError(NfcError.NDEF_FORMATTABLE_BUT_EMPTY)
+                if (isAdminLogEnabled) Log.e(NfcError.NDEF_FORMATTABLE_BUT_EMPTY.message)
+                passScanErrorToHandlers(NfcError.NDEF_FORMATTABLE_BUT_EMPTY)
             } else {
-                onScanError(NfcError.NDEF_NOT_SUPPORTED)
+                if (isAdminLogEnabled) Log.e(NfcError.NDEF_NOT_SUPPORTED.message)
+                passScanErrorToHandlers(NfcError.NDEF_NOT_SUPPORTED)
             }
             return
         }
@@ -262,35 +196,50 @@ class NfcAdmin(
             ndef.connect()
             val ndefMessage = ndef.ndefMessage ?: ndef.cachedNdefMessage // Try also cache
             if (ndefMessage == null) {
-                onScanError(NfcError.NO_NDEF_MESSAGE)
+                if (isAdminLogEnabled) Log.e(NfcError.NO_NDEF_MESSAGE.message)
+                passScanErrorToHandlers(NfcError.NO_NDEF_MESSAGE)
                 ndef.close()
                 return
             }
 
             val records = ndefMessage.records
             if (records.isEmpty()) {
-                onScanError(NfcError.NO_NDEF_RECORDS)
+                if (isAdminLogEnabled) Log.e(NfcError.NO_NDEF_RECORDS.message)
+                passScanErrorToHandlers(NfcError.NO_NDEF_RECORDS)
                 ndef.close()
                 return
             }
-            handler.parse(ndefMessage.records)
+            handler.onNfcTagScanned(ndefMessage.records)
             ndef.close()
-            onScanSuccessful(records)
+
+            if (isAdminLogEnabled) Log.i("Reads from NFC:\n${records.joinToString("\n")}")
+            handlers.forEach { it.onNfcTagScanned(records) }
+
         } catch (e: IOException) {
-            onScanError(NfcError.NFC_IO_ERROR, e)
+            if (isAdminLogEnabled) Log.e("${NfcError.NFC_IO_ERROR.message}: ${e.message}", e)
+            passScanErrorToHandlers(NfcError.NFC_IO_ERROR)
         } catch (e: FormatException) {
-            onScanError(NfcError.NFC_FORMAT_ERROR, e)
+            if (isAdminLogEnabled) Log.e("${NfcError.NFC_FORMAT_ERROR.message}: ${e.message}", e)
+            passScanErrorToHandlers(NfcError.NFC_FORMAT_ERROR)
         } catch (e: Exception) {
-            onScanError(NfcError.UNKNOWN_READ_ERROR, e)
+            if (isAdminLogEnabled) Log.e("${NfcError.UNKNOWN_READ_ERROR.message}: ${e.message}", e)
+            passScanErrorToHandlers(NfcError.UNKNOWN_READ_ERROR)
         } finally {
             try {
                 if (ndef.isConnected) {
                     ndef.close()
                 }
             } catch (e: IOException) {
-                onAdminError(NfcAdminError.ERROR_CLOSING_NDEF_CONNECTION, e)
+                if (isAdminLogEnabled) {
+                    Log.e("${NfcAdminError.ERROR_CLOSING_NDEF_CONNECTION.message}: ${e.message}", e)
+                }
+                nfcStateListener?.onError(NfcAdminError.ERROR_CLOSING_NDEF_CONNECTION)
             }
         }
+    }
+
+    private fun passScanErrorToHandlers(error: NfcError) {
+        handlers.forEach { it.onScanError(error) }
     }
 
     private fun writeNdefMessageToTag(message: NdefMessage, tag: Tag) {
@@ -299,31 +248,42 @@ class NfcAdmin(
             try {
                 ndef.connect()
                 if (!ndef.isWritable) {
-                    onWriteError(NfcError.TAG_READ_ONLY)
+                    if (isAdminLogEnabled) Log.e(NfcError.TAG_READ_ONLY.message)
+                    passWriteErrorToHandlers(NfcError.TAG_READ_ONLY)
                     ndef.close()
                     return
                 }
                 val maxSize = ndef.maxSize
                 if (message.toByteArray().size > maxSize) {
-                    onWriteError(NfcError.DATA_TOO_LARGE)
+                    if (isAdminLogEnabled) Log.e(NfcError.DATA_TOO_LARGE.message)
+                    passWriteErrorToHandlers(NfcError.DATA_TOO_LARGE)
                     ndef.close()
                     return
                 }
                 ndef.writeNdefMessage(message)
-                onWrittenSuccessful()
+
+                if (isAdminLogEnabled) Log.i("NDEF message successfully written.")
+                handlers.forEach { it.onNfcTagWritten() }
+
             } catch (e: IOException) {
-                onWriteError(NfcError.NFC_WRITE_IO_ERROR, e)
+                if (isAdminLogEnabled) Log.e("${NfcError.NFC_WRITE_IO_ERROR.message}: ${e.message}", e)
+                passWriteErrorToHandlers(NfcError.NFC_WRITE_IO_ERROR)
             } catch (e: FormatException) {
-                onWriteError(NfcError.NFC_WRITE_FORMAT_ERROR, e)
+                if (isAdminLogEnabled) Log.e("${NfcError.NFC_WRITE_FORMAT_ERROR.message}: ${e.message}", e)
+                passWriteErrorToHandlers(NfcError.NFC_WRITE_FORMAT_ERROR)
             } catch (e: Exception) {
-                onWriteError(NfcError.UNKNOWN_WRITE_ERROR)
+                if (isAdminLogEnabled) Log.e(NfcError.UNKNOWN_WRITE_ERROR.message)
+                passWriteErrorToHandlers(NfcError.UNKNOWN_WRITE_ERROR)
             } finally {
                 try {
                     if (ndef.isConnected) {
                         ndef.close()
                     }
                 } catch (e: IOException) {
-                    onAdminError(NfcAdminError.ERROR_CLOSING_NDEF_CONNECTION, e)
+                    if (isAdminLogEnabled) {
+                        Log.e("${NfcAdminError.ERROR_CLOSING_NDEF_CONNECTION.message}: ${e.message}", e)
+                    }
+                    nfcStateListener?.onError(NfcAdminError.ERROR_CLOSING_NDEF_CONNECTION)
                 }
             }
         } else {
@@ -332,25 +292,61 @@ class NfcAdmin(
                 try {
                     ndefFormatable.connect()
                     ndefFormatable.format(message)
-                    onWrittenSuccessful()
+
+                    if (isAdminLogEnabled) Log.i("NDEF message successfully written.")
+                    handlers.forEach { it.onNfcTagWritten() }
+
                 } catch (e: IOException) {
-                    onWriteError(NfcError.NFC_FORMATTABLE_WRITE_IO_ERROR, e)
+                    if (isAdminLogEnabled) Log.e("${NfcError.NFC_FORMATTABLE_WRITE_IO_ERROR.message}: ${e.message}", e)
+                    passWriteErrorToHandlers(NfcError.NFC_FORMATTABLE_WRITE_IO_ERROR)
                 } catch (e: FormatException) {
-                    onWriteError(NfcError.NFC_FORMATTABLE_FORMAT_ERROR, e)
+                    if (isAdminLogEnabled) Log.e("${NfcError.NFC_FORMATTABLE_FORMAT_ERROR.message}: ${e.message}", e)
+                    passWriteErrorToHandlers(NfcError.NFC_FORMATTABLE_FORMAT_ERROR)
                 } catch (e: Exception) {
-                    onWriteError(NfcError.UNKNOWN_FORMATTABLE_ERROR, e)
+                    if (isAdminLogEnabled) Log.e("${NfcError.UNKNOWN_FORMATTABLE_ERROR.message}: ${e.message}", e)
+                    passWriteErrorToHandlers(NfcError.UNKNOWN_FORMATTABLE_ERROR)
                 } finally {
                     try {
                         if (ndefFormatable.isConnected) {
                             ndefFormatable.close()
                         }
                     } catch (e: IOException) {
-                        onAdminError(NfcAdminError.ERROR_CLOSING_NDEFORMATABLE_CONNECTION, e)
+                        if (isAdminLogEnabled) {
+                            Log.e("${NfcAdminError.ERROR_CLOSING_NDEFORMATABLE_CONNECTION.message}: ${e.message}", e)
+                        }
+                        nfcStateListener?.onError(NfcAdminError.ERROR_CLOSING_NDEFORMATABLE_CONNECTION)
                     }
                 }
             } else {
-                onWriteError(NfcError.TAG_NOT_NDEF_COMPATIBLE)
+                if (isAdminLogEnabled) Log.e(NfcError.TAG_NOT_NDEF_COMPATIBLE.message)
+                passWriteErrorToHandlers(NfcError.TAG_NOT_NDEF_COMPATIBLE)
             }
+        }
+    }
+
+    private fun passWriteErrorToHandlers(error: NfcError) {
+        handlers.forEach { it.onWriteError(error) }
+    }
+
+    companion object {
+         fun createDefaultNfcIntentFilters(): Array<IntentFilter> {
+            return NfcIntentFilterBuilder()
+                .addNdefDiscovered()
+                .addTechDiscovered()
+                .addTagDiscovered()
+                .build()
+        }
+
+         fun createDefaultNfcTechListArray(): Array<Array<String>> {
+            return NfcTechListBuilder()
+                .addIsoDep()
+                .addNdef()
+                .addNdefFormatable()
+                .addNfcA()
+                .addNfcB()
+                .addNfcF()
+                .addNfcV()
+                .build()
         }
     }
 }

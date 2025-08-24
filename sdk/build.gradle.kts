@@ -31,10 +31,6 @@ kotlin {
 }
 
 dependencies {
-    implementation(fileTree(mapOf("dir" to "libs", "include" to listOf("*.aar", "*.jar"), "exclude" to listOf("*mock*.jar"))))
-
-    // Changed from implementation to compileOnly to resolve AAR packaging error.
-    // The consuming application will need to provide these dependencies.
     compileOnly(files("${rootProject.projectDir}/libs/taocore.aar"))
     compileOnly(files("${rootProject.projectDir}/libs/taolog.aar"))
 
