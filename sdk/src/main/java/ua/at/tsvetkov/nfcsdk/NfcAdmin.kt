@@ -30,9 +30,10 @@ import java.io.IOException
  *                 to handle specific types of tags.
  *                 These can be added if non-NDEF tags or tags with specific technologies need to be processed.
  */
-class NfcManager(
+class NfcAdmin(
     private val activity: Activity,
     private var nfcStateListener: NfcStateListener? = null,
+    private var isAdminLogEnabled: Boolean = false,
     private val additionalIntentFilters: List<IntentFilter>? = null,
 ) {
 
@@ -89,13 +90,13 @@ class NfcManager(
      * This allows your activity to intercept NFC intents when it is in the foreground.
      * Call this method in onResume() of your Activity.
      */
-    fun onResumeInActivity() {
+    fun enableForegroundDispatch() {
         if (nfcAdapter == null) {
-            onCommonError(NfcError.NFC_ADAPTER_IS_NOT_AVAILABLE, "Foreground dispatch not enabled.")
+            onAdminError(NfcAdminError.NFC_ADAPTER_IS_NOT_AVAILABLE, "Foreground dispatch not enabled.")
             return
         }
         if (nfcAdapter?.isEnabled != false) {
-            onCommonError(NfcError.NFC_ADAPTER_IS_NOT_ENABLED, "Foreground dispatch not enabled.")
+            onAdminError(NfcAdminError.NFC_ADAPTER_IS_NOT_ENABLED, "Foreground dispatch not enabled.")
             return
         }
         try {
@@ -112,7 +113,7 @@ class NfcManager(
                 try {
                     addDataType("*/*") // Принимаем любые NDEF-совместимые типы данных
                 } catch (e: IntentFilter.MalformedMimeTypeException) {
-                    onCommonError(NfcError.MALFORMED_MIME_TYPE, e, "Failed to add NDEF data type")
+                    onAdminError(NfcAdminError.MALFORMED_MIME_TYPE, e, "Failed to add NDEF data type")
                 }
             }
 
@@ -139,7 +140,7 @@ class NfcManager(
 
             Log.d("Foreground dispatch is ON.")
         } catch (e: Exception) {
-            onCommonError(NfcError.ERROR_WHEN_TURNING_ON_FOREGROUND_DISPATCH, e)
+            onAdminError(NfcAdminError.ERROR_WHEN_TURNING_ON_FOREGROUND_DISPATCH, e)
         }
     }
 
@@ -147,7 +148,7 @@ class NfcManager(
      * Disables the Foreground Dispatch System.
      * Call this method in onPause() of your Activity.
      */
-    fun onPauseInActivity() {
+    fun disableForegroundDispatch() {
         try {
             // Unregister BroadcastReceiver to avoid memory leaks
             activity.unregisterReceiver(nfcStateReceiver)
@@ -155,7 +156,7 @@ class NfcManager(
             nfcAdapter?.disableForegroundDispatch(activity)
             Log.d("Foreground dispatch is OFF.")
         } catch (e: Exception) {
-            onCommonError(NfcError.ERROR_WHILE_SHUTTING_DOWN_FOREGROUND_DISPATCH, e)
+            onAdminError(NfcAdminError.ERROR_WHILE_SHUTTING_DOWN_FOREGROUND_DISPATCH, e)
         }
     }
 
@@ -163,7 +164,7 @@ class NfcManager(
      * Processes a received NFC intent. Call this method from onNewIntent() of your Activity.
      * @param intent The intent received from the NFC system.
      */
-    fun handleIntent(intent: Intent) {
+    fun onNewIntentInActivity(intent: Intent) {
         val action = intent.action
         Log.d("Received Intent: $action")
 
@@ -178,7 +179,6 @@ class NfcManager(
                 intent.getParcelableExtra(NfcAdapter.EXTRA_TAG)
             }
             if (tagFromIntent == null) {
-                Log.w("Tag not found in the Intent.")
                 onError(NfcError.TAG_NOT_FOUND)
                 return
             }
@@ -187,7 +187,7 @@ class NfcManager(
             handlers
                 .filter { it.isEnabled }
                 .forEach {
-                    it.getNdefMessage()?.let { message ->
+                    it.preparedNdefMessage?.let { message ->
                         writeNdefMessageToTag(message, tagFromIntent)
                     } ?: run {
                         readNdefMessageFromTag(tagFromIntent, it)
@@ -200,21 +200,21 @@ class NfcManager(
     }
 
     private fun onScanSuccessful(records: Array<NdefRecord>) {
-        Log.list(records.asList(), "Reads from NFC")
+        if(isAdminLogEnabled) Log.list(records.asList(), "Reads from NFC")
         handlers.forEach { it.onNfcTagScanned(records) }
     }
 
     private fun onWrittenSuccessful() {
-        Log.i("NDEF message successfully written.")
+        if(isAdminLogEnabled) Log.i("NDEF message successfully written.")
         handlers.forEach { it.onNfcTagWritten() }
     }
 
-    private fun onCommonError(error: NfcError, message: String = "") {
-        Log.w("${error.message}. $message")
+    private fun onAdminError(error: NfcAdminError, message: String = "") {
+        if(isAdminLogEnabled) Log.w("${error.message}. $message")
         nfcStateListener?.onError(error)
     }
 
-    private fun onCommonError(error: NfcError, e: Exception, message: String = "") {
+    private fun onAdminError(error: NfcAdminError, e: Exception, message: String = "") {
         if (message.isNotEmpty()) {
             Log.e("${error.message}. $message: ${e.message}", e)
         } else {
@@ -232,7 +232,7 @@ class NfcManager(
     }
 
     private fun onScanError(error: NfcError, e: Exception) {
-        Log.e("${error.message}: ${e.message}", e)
+        if(isAdminLogEnabled) Log.e("${error.message}: ${e.message}", e)
         handlers.forEach { it.onScanError(error) }
     }
 
@@ -241,7 +241,7 @@ class NfcManager(
     }
 
     private fun onWriteError(error: NfcError, e: Exception) {
-        Log.e("${error.message}: ${e.message}", e)
+        if(isAdminLogEnabled) Log.e("${error.message}: ${e.message}", e)
         handlers.forEach { it.onWriteError(error) }
     }
 
@@ -288,7 +288,7 @@ class NfcManager(
                     ndef.close()
                 }
             } catch (e: IOException) {
-                onCommonError(NfcError.ERROR_CLOSING_NDEF_CONNECTION, e)
+                onAdminError(NfcAdminError.ERROR_CLOSING_NDEF_CONNECTION, e)
             }
         }
     }
@@ -323,7 +323,7 @@ class NfcManager(
                         ndef.close()
                     }
                 } catch (e: IOException) {
-                    onCommonError(NfcError.ERROR_CLOSING_NDEF_CONNECTION, e)
+                    onAdminError(NfcAdminError.ERROR_CLOSING_NDEF_CONNECTION, e)
                 }
             }
         } else {
@@ -345,7 +345,7 @@ class NfcManager(
                             ndefFormatable.close()
                         }
                     } catch (e: IOException) {
-                        onCommonError(NfcError.ERROR_CLOSING_NDEFORMATABLE_CONNECTION, e)
+                        onAdminError(NfcAdminError.ERROR_CLOSING_NDEFORMATABLE_CONNECTION, e)
                     }
                 }
             } else {

@@ -9,5 +9,5 @@ package ua.at.tsvetkov.nfcsdk
  */
 interface NfcStateListener {
     fun onNfcStateChanged(state: Int)
-    fun onError(error: NfcError)
+    fun onError(error: NfcAdminError)
 }

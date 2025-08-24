@@ -10,27 +10,17 @@ import ua.at.tsvetkov.nfcsdk.NfcWriteListener
  * Created by Alexandr Tsvetkov on 24.08.2025.
  */
 abstract class NfcHandler<T>(
-    private var nfcScanListener: NfcScanListener? = null,
+    private var nfcScanListener: NfcScanListener<T>? = null,
     private var nfcWriteListener: NfcWriteListener? = null,
 ) {
 
     var isEnabled: Boolean = true
 
-    private var result: T? = null
-
-    protected var ndefMessage: NdefMessage? = null
-
-    fun getResult(): T? {
-        return result
-    }
-
-    fun getNdefMessage(): NdefMessage? {
-        return ndefMessage
-    }
+    var preparedNdefMessage: NdefMessage? = null
 
     fun onNfcTagScanned(message: Array<out NdefRecord>) {
-        result = parse(message)
-        nfcScanListener?.onNfcTagScanned(message)
+        val result = parse(message)
+        nfcScanListener?.onNfcTagScanned(result)
     }
 
     fun onNfcTagWritten() {
