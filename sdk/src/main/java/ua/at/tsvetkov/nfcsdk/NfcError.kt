@@ -11,9 +11,8 @@ package ua.at.tsvetkov.nfcsdk
  */
 enum class NfcError(
     /** A human-readable message describing the error. */
-    val message: String
+    val message: String,
 ) {
-
     /** Indicates an error occurred while parsing an NDEF Text Record. */
     ERROR_PARSING_NDEF_TEXT_RECORD("Error parsing NDEF text record"),
 
@@ -78,13 +77,12 @@ enum class NfcError(
     ERROR_CLOSING_NDEFORMATABLE_CONNECTION("Error closing NdefFormatable connection"),
 
     /** Indicates that there is no message prepared for writing. */
-    NO_MESSAGE_TO_WRITE("No message has been prepared for writing to the tag."); // Added based on NdefWellKnownTextHandler
+    NO_MESSAGE_TO_WRITE("No message has been prepared for writing to the tag."), // Added based on NdefWellKnownTextHandler
+    ;
 
     /**
      * Returns the human-readable message associated with this error.
      * @return The error message string.
      */
-    override fun toString(): String {
-        return message
-    }
+    override fun toString(): String = message
 }

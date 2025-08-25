@@ -8,7 +8,6 @@ package ua.at.tsvetkov.nfcsdk
  * @param K The type or category of the scanned NFC record (e.g., NDEF record type).
  */
 interface NfcScanListener<T, K> {
-
     /**
      * Called when an NFC tag has been successfully scanned and its data processed.
      *
@@ -19,7 +18,10 @@ interface NfcScanListener<T, K> {
      *             an NDEF record type like [android.nfc.NdefRecord.RTD_TEXT] or
      *             [android.nfc.NdefRecord.RTD_URI].
      */
-    fun onNfcTagScanned(result: T, type: K)
+    fun onNfcTagScanned(
+        result: T,
+        type: K,
+    )
 
     /**
      * Called when an error occurs during the NFC tag scanning or processing.

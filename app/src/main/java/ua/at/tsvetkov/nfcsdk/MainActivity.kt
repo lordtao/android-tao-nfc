@@ -13,14 +13,14 @@ import ua.at.tsvetkov.nfcsdk.handler.NdefWellKnownTextHandler
 import ua.at.tsvetkov.util.logger.Log
 
 class MainActivity : AppCompatActivity() {
-
     private lateinit var binding: ActivityMainBinding
 
-    private val nfcAdmin = NfcAdmin(
-        activity = this,
-        nfcStateListener = createNfcStateListener(),
-        isAdminLogEnabled = true
-    )
+    private val nfcAdmin =
+        NfcAdmin(
+            activity = this,
+            nfcStateListener = createNfcStateListener(),
+            isAdminLogEnabled = true,
+        )
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -30,15 +30,18 @@ class MainActivity : AppCompatActivity() {
 
         val navView: BottomNavigationView = binding.navView
 
-        val navHostFragment = supportFragmentManager
-            .findFragmentById(R.id.nav_host_fragment_activity_main) as NavHostFragment
+        val navHostFragment =
+            supportFragmentManager
+                .findFragmentById(R.id.nav_host_fragment_activity_main) as NavHostFragment
         val navController = navHostFragment.navController
 
-        val appBarConfiguration = AppBarConfiguration(
-            setOf(
-                R.id.navigation_read, R.id.navigation_write
+        val appBarConfiguration =
+            AppBarConfiguration(
+                setOf(
+                    R.id.navigation_read,
+                    R.id.navigation_write,
+                ),
             )
-        )
         setupActionBarWithNavController(navController, appBarConfiguration)
         navView.setupWithNavController(navController)
 
@@ -62,8 +65,8 @@ class MainActivity : AppCompatActivity() {
         nfcAdmin.unregisterNfcStateReceiver()
     }
 
-    private fun createNfcStateListener(): NfcStateListener? {
-        return object : NfcStateListener {
+    private fun createNfcStateListener(): NfcStateListener? =
+        object : NfcStateListener {
             override fun onNfcStarted() {
                 Log.i("NFC started successfully")
             }
@@ -102,6 +105,4 @@ class MainActivity : AppCompatActivity() {
                 Log.e("NFC Error: ${error.message}")
             }
         }
-    }
-
 }

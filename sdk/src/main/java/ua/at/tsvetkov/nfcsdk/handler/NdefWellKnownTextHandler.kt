@@ -30,12 +30,9 @@ import java.nio.charset.Charset
 class NdefWellKnownTextHandler(
     var languageCode: String = "en",
 ) : NfcHandler<String, ByteArray>() {
-
     override val techList = listOf(Ndef::class.java.name, NdefFormatable::class.java.name)
 
-    override fun isHavePreparedMessageToWrite(): Boolean {
-        return preparedNdefMessage != null
-    }
+    override fun isHavePreparedMessageToWrite(): Boolean = preparedNdefMessage != null
 
     /**
      * Holds the NDEF message that has been prepared for writing to an NFC tag.
@@ -48,7 +45,7 @@ class NdefWellKnownTextHandler(
     override fun readMessageFromTag(tag: Tag) {
         val ndef = Ndef.get(tag)
         if (ndef == null) {
-            //Try reading as NDEF Formatable if there is a scan listener
+            // Try reading as NDEF Formatable if there is a scan listener
             val ndefFormatable = NdefFormatable.get(tag)
             if (ndefFormatable != null) {
                 Log.e(NfcError.NDEF_FORMATTABLE_BUT_EMPTY.message)
@@ -149,18 +146,22 @@ class NdefWellKnownTextHandler(
      * @param builder The [StringBuilder] to which the decoded text will be appended,
      *                followed by a newline character.
      */
-    private fun appendText(record: NdefRecord, builder: StringBuilder) {
+    private fun appendText(
+        record: NdefRecord,
+        builder: StringBuilder,
+    ) {
         try {
             val payload = record.payload
             val status = payload[0].toInt()
             val languageCodeLength = status and 0x3F // Первые 6 бит
             val encoding = if ((status and 0x80) == 0) "UTF-8" else "UTF-16" // 7-й бит
-            val text = String(
-                payload,
-                languageCodeLength + 1,
-                payload.size - languageCodeLength - 1,
-                Charset.forName(encoding)
-            )
+            val text =
+                String(
+                    payload,
+                    languageCodeLength + 1,
+                    payload.size - languageCodeLength - 1,
+                    Charset.forName(encoding),
+                )
             builder.append(text).append("\n")
         } catch (e: Exception) {
             Log.e("${NfcError.ERROR_PARSING_NDEF_TEXT_RECORD.message}: ${e.message}", e)
@@ -192,7 +193,6 @@ class NdefWellKnownTextHandler(
                     Log.i("NDEF message successfully written.")
                     nfcWriteListener?.onNfcTagWritten()
                     preparedNdefMessage = null
-
                 } catch (e: IOException) {
                     Log.e("${NfcError.NFC_WRITE_IO_ERROR}: ${e.message}", e)
                     onWriteError(NfcError.NFC_WRITE_IO_ERROR)
@@ -224,7 +224,6 @@ class NdefWellKnownTextHandler(
                         Log.i("NDEF message successfully written.")
                         nfcWriteListener?.onNfcTagWritten()
                         preparedNdefMessage = null
-
                     } catch (e: IOException) {
                         Log.e("${NfcError.NFC_FORMATTABLE_WRITE_IO_ERROR}: ${e.message}", e)
                         onWriteError(NfcError.NFC_FORMATTABLE_WRITE_IO_ERROR)
@@ -266,5 +265,4 @@ class NdefWellKnownTextHandler(
         Log.d("Data for writing has been prepared.: '$data'")
         preparedNdefMessage = NdefMessage(arrayOf(record))
     }
-
 }

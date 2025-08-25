@@ -18,7 +18,6 @@ abstract class NfcHandler<T, K>(
     protected var nfcScanListener: NfcScanListener<T, K>? = null,
     protected var nfcWriteListener: NfcWriteListener? = null,
 ) {
-
     /**
      * A list of NFC technologies (e.g., `android.nfc.tech.Ndef`, `android.nfc.tech.IsoDep`)
      * that this handler supports. This can be used to filter tags or determine compatibility.
@@ -51,11 +50,13 @@ abstract class NfcHandler<T, K>(
      * @return `true` if the tag supports at least one technology from [techList], `false` otherwise or if the tag is null.
      */
     fun containsSupportedRecord(tag: Tag?): Boolean {
-        tag?.techList?.firstOrNull { tech ->
-            techList.contains(tech)
-        }?.let {
-            return true
-        }
+        tag
+            ?.techList
+            ?.firstOrNull { tech ->
+                techList.contains(tech)
+            }?.let {
+                return true
+            }
         return false
     }
 
@@ -84,7 +85,6 @@ abstract class NfcHandler<T, K>(
      */
     abstract fun writeMessageToTag(tag: Tag)
 
-
     /**
      * Prepares data for writing to an NFC tag.
      * This method must be called before the tag is brought near the device for writing.
@@ -93,5 +93,4 @@ abstract class NfcHandler<T, K>(
      * @param data The data of type [T] to be written to the tag.
      */
     abstract fun prepareToWrite(data: T)
-
 }

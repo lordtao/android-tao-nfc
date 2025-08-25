@@ -33,19 +33,22 @@ class NfcAdmin(
     private var nfcStateListener: NfcStateListener? = null,
     private var isAdminLogEnabled: Boolean = false,
 ) : NfcAdapter.ReaderCallback {
-
     private val nfcAdapter: NfcAdapter? by lazy { NfcAdapter.getDefaultAdapter(activity) }
 
-    private val handlers: MutableList<NfcHandler<*,*>> = mutableListOf()
+    private val handlers: MutableList<NfcHandler<*, *>> = mutableListOf()
 
-    private val nfcStateReceiver = object : BroadcastReceiver() {
-        override fun onReceive(context: Context?, intent: Intent?) {
-            if (intent?.action == NfcAdapter.ACTION_ADAPTER_STATE_CHANGED) {
-                val state = intent.getIntExtra(NfcAdapter.EXTRA_ADAPTER_STATE, NfcAdapter.STATE_OFF)
-                nfcStateListener?.onNfcStateChanged(state)
+    private val nfcStateReceiver =
+        object : BroadcastReceiver() {
+            override fun onReceive(
+                context: Context?,
+                intent: Intent?,
+            ) {
+                if (intent?.action == NfcAdapter.ACTION_ADAPTER_STATE_CHANGED) {
+                    val state = intent.getIntExtra(NfcAdapter.EXTRA_ADAPTER_STATE, NfcAdapter.STATE_OFF)
+                    nfcStateListener?.onNfcStateChanged(state)
+                }
             }
         }
-    }
 
     /**
      * Checks if the device has NFC hardware.
@@ -68,7 +71,7 @@ class NfcAdmin(
      *
      * @param handler The [NfcHandler] instance to add.
      */
-    fun addHandler(handler: NfcHandler<*,*>) {
+    fun addHandler(handler: NfcHandler<*, *>) {
         handlers.add(handler)
     }
 
@@ -77,7 +80,7 @@ class NfcAdmin(
      *
      * @param handler The [NfcHandler] instance to remove.
      */
-    fun removeHandler(handler: NfcHandler<*,*>) {
+    fun removeHandler(handler: NfcHandler<*, *>) {
         handlers.remove(handler)
     }
 
@@ -118,7 +121,8 @@ class NfcAdmin(
      *               This can be used to pass specific polling loop parameters.
      */
     fun enableReaderModeWithDefaults(extras: Bundle? = null) {
-        val readerFlags = NfcAdapter.FLAG_READER_NFC_A or
+        val readerFlags =
+            NfcAdapter.FLAG_READER_NFC_A or
                 NfcAdapter.FLAG_READER_NFC_B or
                 NfcAdapter.FLAG_READER_NFC_F or
                 NfcAdapter.FLAG_READER_NFC_V or
@@ -144,7 +148,10 @@ class NfcAdmin(
      *               This can be used to pass specific polling loop parameters, such as delay.
      * @see NfcAdapter.enableReaderMode
      */
-    fun enableReaderMode(flags: Int, extras: Bundle? = null) {
+    fun enableReaderMode(
+        flags: Int,
+        extras: Bundle? = null,
+    ) {
         if (nfcAdapter == null) {
             if (isAdminLogEnabled) Log.w("${NfcAdminError.NFC_ADAPTER_IS_NOT_AVAILABLE}. Reader mode not enabled.")
             nfcStateListener?.onError(NfcAdminError.NFC_ADAPTER_IS_NOT_AVAILABLE)
@@ -212,8 +219,7 @@ class NfcAdmin(
             handlers
                 .filter {
                     it.containsSupportedRecord(tag)
-                }
-                .forEach { handler ->
+                }.forEach { handler ->
                     if (handler.isHavePreparedMessageToWrite()) {
                         handler.writeMessageToTag(tag)
                     } else {
@@ -222,5 +228,4 @@ class NfcAdmin(
                 }
         }
     }
-
 }

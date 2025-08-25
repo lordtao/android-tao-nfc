@@ -7,7 +7,6 @@ package ua.at.tsvetkov.nfcsdk
  * administrative errors encountered by [NfcAdmin].
  */
 interface NfcStateListener {
-
     /**
      * Called when the NFC reader mode has been successfully started by [NfcAdmin].
      * This indicates that the app is now actively listening for NFC tags.

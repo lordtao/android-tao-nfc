@@ -10,9 +10,8 @@ package ua.at.tsvetkov.nfcsdk
  */
 enum class NfcAdminError(
     /** A human-readable message describing the administrative error. */
-    val message: String
+    val message: String,
 ) {
-
     /** Indicates an error occurred while attempting to disable NFC reader mode. */
     ERROR_WHILE_SHUTTING_DOWN_READER_MODE("Error while shutting down reader mode."),
 
@@ -29,14 +28,12 @@ enum class NfcAdminError(
      * Indicates that an NFC tag was expected (e.g., from an intent or reader callback)
      * but was not found or was null.
      */
-    TAG_NOT_FOUND("NFC Tag not found in intent.");
+    TAG_NOT_FOUND("NFC Tag not found in intent."),
+    ;
 
     /**
      * Returns the human-readable message associated with this administrative error.
      * @return The error message string.
      */
-    override fun toString(): String {
-        return message
-    }
-
+    override fun toString(): String = message
 }

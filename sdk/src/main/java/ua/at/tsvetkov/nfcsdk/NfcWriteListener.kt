@@ -10,7 +10,6 @@ package ua.at.tsvetkov.nfcsdk
  * data to an NFC tag.
  */
 interface NfcWriteListener {
-
     /**
      * Called when data has been successfully written to the NFC tag.
      */
@@ -23,5 +22,4 @@ interface NfcWriteListener {
      *              that occurred during the write operation.
      */
     fun onNfcWriteError(error: NfcError)
-
 }
