@@ -4,42 +4,39 @@ package ua.at.tsvetkov.nfcsdk
  * Created by Alexandr Tsvetkov on 22.08.2025.
  */
 import android.app.Activity
-import android.app.PendingIntent
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
-import android.nfc.FormatException
-import android.nfc.NdefMessage
 import android.nfc.NfcAdapter
 import android.nfc.Tag
-import android.nfc.tech.Ndef
-import android.nfc.tech.NdefFormatable
-import android.os.Build
+import android.os.Bundle
 import ua.at.tsvetkov.nfcsdk.handler.NfcHandler
 import ua.at.tsvetkov.util.logger.Log
-import java.io.IOException
 
 /**
- * Class for managing reading and writing NFC tags.
+ * Manages NFC interactions, including reading and writing NFC tags.
  *
- * @param activity Activity that will be used for NFC interactions. Required for Foreground Dispatch System and BroadcastReceiver.
- * @param nfcStateListener Listener to receive NFC state.
- * @param nfcIntentFilters Additionally you can add intent filters like ACTION_TAG_DISCOVERED and ACTION_TECH_DISCOVERED
- *                 to handle specific types of tags.
- *                 These can be added if non-NDEF tags or tags with specific technologies need to be processed.
+ * This class simplifies NFC operations by handling adapter states, reader mode,
+ * and tag discovery. It uses a list of [NfcHandler] instances to process
+ * different types of NFC tag content.
+ *
+ * @param activity The current [Activity] context, required for NFC operations
+ *                 such as foreground dispatch and reader mode.
+ * @param nfcStateListener An optional listener to receive callbacks about NFC adapter
+ *                         state changes (e.g., enabled, disabled) and errors.
+ * @param isAdminLogEnabled If `true`, enables detailed logging for debugging purposes.
+ *                          Defaults to `false`.
  */
 class NfcAdmin(
     private val activity: Activity,
-    private val nfcIntentFilters: Array<IntentFilter> = emptyArray<IntentFilter>(),
-    private val nfcTechListArray: Array<Array<String>>? = null,
     private var nfcStateListener: NfcStateListener? = null,
     private var isAdminLogEnabled: Boolean = false,
-) {
+) : NfcAdapter.ReaderCallback {
 
     private val nfcAdapter: NfcAdapter? by lazy { NfcAdapter.getDefaultAdapter(activity) }
 
-    private val handlers: MutableList<NfcHandler<*>> = mutableListOf()
+    private val handlers: MutableList<NfcHandler<*,*>> = mutableListOf()
 
     private val nfcStateReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
@@ -51,302 +48,179 @@ class NfcAdmin(
     }
 
     /**
-     * Checks if NFC is available on the device.
+     * Checks if the device has NFC hardware.
+     *
+     * @return `true` if NFC hardware is available, `false` otherwise.
      */
     fun isNfcAvailable(): Boolean = nfcAdapter != null
 
     /**
      * Checks if NFC is enabled on the device.
+     * For this to be `true`, NFC hardware must also be available.
+     *
+     * @return `true` if NFC is enabled, `false` otherwise.
      */
     fun isNfcEnabled(): Boolean = nfcAdapter?.isEnabled == true
 
     /**
-     * Add new NfcHandler
+     * Adds an [NfcHandler] to the list of handlers that will process discovered NFC tags.
+     * Each handler can be responsible for specific types of NFC data.
+     *
+     * @param handler The [NfcHandler] instance to add.
      */
-    fun addHandler(handler: NfcHandler<*>) {
+    fun addHandler(handler: NfcHandler<*,*>) {
         handlers.add(handler)
     }
 
     /**
-     * Remove NfcHandler
+     * Removes a previously added [NfcHandler] from the list of handlers.
+     *
+     * @param handler The [NfcHandler] instance to remove.
      */
-    fun removeHandler(handler: NfcHandler<*>) {
+    fun removeHandler(handler: NfcHandler<*,*>) {
         handlers.remove(handler)
     }
 
-    fun registerStateReceiver() {
+    /**
+     * Registers a [BroadcastReceiver] to listen for changes in the NFC adapter's state
+     * (e.g., when NFC is turned on or off in the device settings).
+     * This method should typically be called in the `onResume` lifecycle method of an Activity.
+     */
+    fun registerNfcStateReceiver() {
         val filter = IntentFilter(NfcAdapter.ACTION_ADAPTER_STATE_CHANGED)
         activity.registerReceiver(nfcStateReceiver, filter)
     }
 
+    /**
+     * Unregisters the [BroadcastReceiver] that listens for NFC adapter state changes.
+     * This method should typically be called in the `onPause` lifecycle method of an Activity
+     * to prevent memory leaks.
+     */
     fun unregisterNfcStateReceiver() {
         activity.unregisterReceiver(nfcStateReceiver)
     }
 
     /**
-     * Enables the Foreground Dispatch System.
-     * This allows your activity to intercept NFC intents when it is in the foreground.
-     * Call this method in onResume() of your Activity.
+     * Enables NFC reader mode with a default set of flags.
+     * The default flags include:
+     * - [NfcAdapter.FLAG_READER_NFC_A]
+     * - [NfcAdapter.FLAG_READER_NFC_B]
+     * - [NfcAdapter.FLAG_READER_NFC_F]
+     * - [NfcAdapter.FLAG_READER_NFC_V]
+     * - [NfcAdapter.FLAG_READER_NFC_BARCODE]
+     * - [NfcAdapter.FLAG_READER_SKIP_NDEF_CHECK]
+     * - [NfcAdapter.FLAG_READER_NO_PLATFORM_SOUNDS]
+     *
+     * This method should typically be called in the `onResume` lifecycle method of an Activity.
+     * When reader mode is enabled, the calling Activity has priority in handling discovered NFC tags.
+     *
+     * @param extras An optional [Bundle] of extra data. Can be `null`.
+     *               This can be used to pass specific polling loop parameters.
      */
-    fun enableForegroundDispatch() {
+    fun enableReaderModeWithDefaults(extras: Bundle? = null) {
+        val readerFlags = NfcAdapter.FLAG_READER_NFC_A or
+                NfcAdapter.FLAG_READER_NFC_B or
+                NfcAdapter.FLAG_READER_NFC_F or
+                NfcAdapter.FLAG_READER_NFC_V or
+                NfcAdapter.FLAG_READER_NFC_BARCODE or
+                NfcAdapter.FLAG_READER_SKIP_NDEF_CHECK or
+                NfcAdapter.FLAG_READER_NO_PLATFORM_SOUNDS
+        enableReaderMode(readerFlags, extras)
+    }
+
+    /**
+     * Enables NFC reader mode for the current Activity.
+     *
+     * When reader mode is enabled, the specified Activity will receive NFC tag discovery events
+     * through the [NfcAdapter.ReaderCallback] interface (which this class implements).
+     * This mode gives the foreground Activity priority in handling NFC tags, and generally
+     * prevents other apps from interfering.
+     *
+     * This method should typically be called in the `onResume` lifecycle method of an Activity.
+     *
+     * @param flags A bitmask of flags indicating the NFC technologies to poll for.
+     *              For example, [NfcAdapter.FLAG_READER_NFC_A], [NfcAdapter.FLAG_READER_ISO_DEP].
+     * @param extras An optional [Bundle] of extra data. Can be `null`.
+     *               This can be used to pass specific polling loop parameters, such as delay.
+     * @see NfcAdapter.enableReaderMode
+     */
+    fun enableReaderMode(flags: Int, extras: Bundle? = null) {
         if (nfcAdapter == null) {
-            if (isAdminLogEnabled) Log.w("${NfcAdminError.NFC_ADAPTER_IS_NOT_AVAILABLE}. Foreground dispatch not enabled.")
+            if (isAdminLogEnabled) Log.w("${NfcAdminError.NFC_ADAPTER_IS_NOT_AVAILABLE}. Reader mode not enabled.")
             nfcStateListener?.onError(NfcAdminError.NFC_ADAPTER_IS_NOT_AVAILABLE)
             return
         }
         if (nfcAdapter?.isEnabled == false) {
-            if (isAdminLogEnabled) Log.w("${NfcAdminError.NFC_ADAPTER_IS_NOT_ENABLED.message}. Foreground dispatch not enabled.")
+            if (isAdminLogEnabled) Log.w("${NfcAdminError.NFC_ADAPTER_IS_NOT_ENABLED}. Reader mode not enabled.")
             nfcStateListener?.onError(NfcAdminError.NFC_ADAPTER_IS_NOT_ENABLED)
             return
         }
         try {
-            val intent = Intent(activity, activity.javaClass).addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP)
-            val pendingIntentFlags = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_MUTABLE
-            } else {
-                PendingIntent.FLAG_UPDATE_CURRENT
-            }
-            val pendingIntent = PendingIntent.getActivity(activity, 0, intent, pendingIntentFlags)
-
-            nfcAdapter?.enableForegroundDispatch(activity, pendingIntent, nfcIntentFilters, nfcTechListArray)
-
-            if (isAdminLogEnabled) Log.d("Foreground dispatch is ON.")
+            nfcAdapter?.enableReaderMode(activity, this, flags, extras)
+            if (isAdminLogEnabled) Log.d("Reader mode is ON.")
             nfcStateListener?.onNfcStarted()
         } catch (e: Exception) {
             if (isAdminLogEnabled) {
-                Log.e("${NfcAdminError.ERROR_WHEN_TURNING_ON_FOREGROUND_DISPATCH.message}: ${e.message}", e)
+                Log.e("${NfcAdminError.ERROR_WHEN_TURNING_ON_READER_MODE}: ${e.message}", e)
             }
-            nfcStateListener?.onError(NfcAdminError.ERROR_WHEN_TURNING_ON_FOREGROUND_DISPATCH)
+            nfcStateListener?.onError(NfcAdminError.ERROR_WHEN_TURNING_ON_READER_MODE)
         }
     }
 
     /**
-     * Disables the Foreground Dispatch System.
-     * Call this method in onPause() of your Activity.
+     * Disables NFC reader mode for the current Activity.
+     *
+     * This method should typically be called in the `onPause` lifecycle method of an Activity
+     * to release NFC resources and allow other applications to handle NFC events.
+     *
+     * @see NfcAdapter.disableReaderMode
      */
-    fun disableForegroundDispatch() {
+    fun disableReaderMode() {
+        if (nfcAdapter == null) {
+            return
+        }
         try {
-            nfcAdapter?.disableForegroundDispatch(activity)
-            if (isAdminLogEnabled) Log.d("Foreground dispatch is OFF.")
+            nfcAdapter?.disableReaderMode(activity)
+            if (isAdminLogEnabled) Log.d("Reader mode is OFF.")
         } catch (e: Exception) {
             if (isAdminLogEnabled) {
-                Log.e("${NfcAdminError.ERROR_WHILE_SHUTTING_DOWN_FOREGROUND_DISPATCH.message}: ${e.message}", e)
+                Log.e("${NfcAdminError.ERROR_WHILE_SHUTTING_DOWN_READER_MODE}: ${e.message}", e)
             }
-            nfcStateListener?.onError(NfcAdminError.ERROR_WHILE_SHUTTING_DOWN_FOREGROUND_DISPATCH)
+            nfcStateListener?.onError(NfcAdminError.ERROR_WHILE_SHUTTING_DOWN_READER_MODE)
         }
     }
 
     /**
-     * Processes a received NFC intent. Call this method from onNewIntent() of your Activity.
-     * @param intent The intent received from the NFC system.
+     * Callback method from [NfcAdapter.ReaderCallback].
+     * This method is invoked when an NFC tag is discovered while reader mode is active.
+     *
+     * The discovered tag is then passed to registered [NfcHandler] instances for processing.
+     * Processing is performed on the UI thread.
+     *
+     * @param tag The discovered [Tag] object. Can be `null` if an error occurred during discovery.
      */
-    fun onNewIntentInActivity(intent: Intent) {
-        val action = intent.action
-//        if (action == Intent.ACTION_MAIN) return // Ignore main action
-        Log.d("Received Intent: $action")
-
-        if (NfcAdapter.ACTION_NDEF_DISCOVERED == action ||
-            NfcAdapter.ACTION_TECH_DISCOVERED == action ||
-            NfcAdapter.ACTION_TAG_DISCOVERED == action
-        ) {
-            val tagFromIntent: Tag? = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                intent.getParcelableExtra(NfcAdapter.EXTRA_TAG, Tag::class.java)
-            } else {
-                @Suppress("DEPRECATION")
-                intent.getParcelableExtra(NfcAdapter.EXTRA_TAG)
-            }
-            if (tagFromIntent == null) {
-                if (isAdminLogEnabled) Log.w(NfcAdminError.TAG_NOT_FOUND.message)
-                nfcStateListener?.onError(NfcAdminError.TAG_NOT_FOUND)
-                return
-            }
-
-            handlers
-                .filter { it.isEnabled }
-                .forEach {
-                    it.preparedNdefMessage?.let { message -> // Attempt to write if there is data to write
-                        writeNdefMessageToTag(message, tagFromIntent)
-                        it.preparedNdefMessage = null // Reset the message after attempting to write
-                    } ?: run {
-                        readNdefMessageFromTag(tagFromIntent, it)
-                    }
-                }
-        } else {
-            if (isAdminLogEnabled) Log.e("${NfcError.UNKNOWN_NFC_ACTION.message}: $action")
-            passScanErrorToHandlers(NfcError.UNKNOWN_NFC_ACTION)
-        }
-    }
-
-    private fun readNdefMessageFromTag(tag: Tag, handler: NfcHandler<*>) {
-        val ndef = Ndef.get(tag)
-        if (ndef == null) {
-            //Try reading as NDEF Formatable if there is a scan listener
-            val ndefFormatable = NdefFormatable.get(tag)
-            if (ndefFormatable != null) {
-                if (isAdminLogEnabled) Log.e(NfcError.NDEF_FORMATTABLE_BUT_EMPTY.message)
-                passScanErrorToHandlers(NfcError.NDEF_FORMATTABLE_BUT_EMPTY)
-            } else {
-                if (isAdminLogEnabled) Log.e(NfcError.NDEF_NOT_SUPPORTED.message)
-                passScanErrorToHandlers(NfcError.NDEF_NOT_SUPPORTED)
-            }
+    override fun onTagDiscovered(tag: Tag?) {
+        if (tag == null) {
+            if (isAdminLogEnabled) Log.w(NfcAdminError.TAG_NOT_FOUND.message)
+            nfcStateListener?.onError(NfcAdminError.TAG_NOT_FOUND)
             return
         }
 
-        try {
-            ndef.connect()
-            val ndefMessage = ndef.ndefMessage ?: ndef.cachedNdefMessage // Try also cache
-            if (ndefMessage == null) {
-                if (isAdminLogEnabled) Log.e(NfcError.NO_NDEF_MESSAGE.message)
-                passScanErrorToHandlers(NfcError.NO_NDEF_MESSAGE)
-                ndef.close()
-                return
-            }
+        if (isAdminLogEnabled) Log.d("Tag discovered in ReaderMode: $tag")
 
-            val records = ndefMessage.records
-            if (records.isEmpty()) {
-                if (isAdminLogEnabled) Log.e(NfcError.NO_NDEF_RECORDS.message)
-                passScanErrorToHandlers(NfcError.NO_NDEF_RECORDS)
-                ndef.close()
-                return
-            }
-            handler.onNfcTagScanned(ndefMessage.records)
-            ndef.close()
-
-            if (isAdminLogEnabled) Log.i("Reads from NFC:\n${records.joinToString("\n")}")
-            handlers.forEach { it.onNfcTagScanned(records) }
-
-        } catch (e: IOException) {
-            if (isAdminLogEnabled) Log.e("${NfcError.NFC_IO_ERROR.message}: ${e.message}", e)
-            passScanErrorToHandlers(NfcError.NFC_IO_ERROR)
-        } catch (e: FormatException) {
-            if (isAdminLogEnabled) Log.e("${NfcError.NFC_FORMAT_ERROR.message}: ${e.message}", e)
-            passScanErrorToHandlers(NfcError.NFC_FORMAT_ERROR)
-        } catch (e: Exception) {
-            if (isAdminLogEnabled) Log.e("${NfcError.UNKNOWN_READ_ERROR.message}: ${e.message}", e)
-            passScanErrorToHandlers(NfcError.UNKNOWN_READ_ERROR)
-        } finally {
-            try {
-                if (ndef.isConnected) {
-                    ndef.close()
+        activity.runOnUiThread {
+            handlers
+                .filter {
+                    it.containsSupportedRecord(tag)
                 }
-            } catch (e: IOException) {
-                if (isAdminLogEnabled) {
-                    Log.e("${NfcAdminError.ERROR_CLOSING_NDEF_CONNECTION.message}: ${e.message}", e)
-                }
-                nfcStateListener?.onError(NfcAdminError.ERROR_CLOSING_NDEF_CONNECTION)
-            }
-        }
-    }
-
-    private fun passScanErrorToHandlers(error: NfcError) {
-        handlers.forEach { it.onScanError(error) }
-    }
-
-    private fun writeNdefMessageToTag(message: NdefMessage, tag: Tag) {
-        val ndef = Ndef.get(tag)
-        if (ndef != null) {
-            try {
-                ndef.connect()
-                if (!ndef.isWritable) {
-                    if (isAdminLogEnabled) Log.e(NfcError.TAG_READ_ONLY.message)
-                    passWriteErrorToHandlers(NfcError.TAG_READ_ONLY)
-                    ndef.close()
-                    return
-                }
-                val maxSize = ndef.maxSize
-                if (message.toByteArray().size > maxSize) {
-                    if (isAdminLogEnabled) Log.e(NfcError.DATA_TOO_LARGE.message)
-                    passWriteErrorToHandlers(NfcError.DATA_TOO_LARGE)
-                    ndef.close()
-                    return
-                }
-                ndef.writeNdefMessage(message)
-
-                if (isAdminLogEnabled) Log.i("NDEF message successfully written.")
-                handlers.forEach { it.onNfcTagWritten() }
-
-            } catch (e: IOException) {
-                if (isAdminLogEnabled) Log.e("${NfcError.NFC_WRITE_IO_ERROR.message}: ${e.message}", e)
-                passWriteErrorToHandlers(NfcError.NFC_WRITE_IO_ERROR)
-            } catch (e: FormatException) {
-                if (isAdminLogEnabled) Log.e("${NfcError.NFC_WRITE_FORMAT_ERROR.message}: ${e.message}", e)
-                passWriteErrorToHandlers(NfcError.NFC_WRITE_FORMAT_ERROR)
-            } catch (e: Exception) {
-                if (isAdminLogEnabled) Log.e(NfcError.UNKNOWN_WRITE_ERROR.message)
-                passWriteErrorToHandlers(NfcError.UNKNOWN_WRITE_ERROR)
-            } finally {
-                try {
-                    if (ndef.isConnected) {
-                        ndef.close()
-                    }
-                } catch (e: IOException) {
-                    if (isAdminLogEnabled) {
-                        Log.e("${NfcAdminError.ERROR_CLOSING_NDEF_CONNECTION.message}: ${e.message}", e)
-                    }
-                    nfcStateListener?.onError(NfcAdminError.ERROR_CLOSING_NDEF_CONNECTION)
-                }
-            }
-        } else {
-            val ndefFormatable = NdefFormatable.get(tag)
-            if (ndefFormatable != null) {
-                try {
-                    ndefFormatable.connect()
-                    ndefFormatable.format(message)
-
-                    if (isAdminLogEnabled) Log.i("NDEF message successfully written.")
-                    handlers.forEach { it.onNfcTagWritten() }
-
-                } catch (e: IOException) {
-                    if (isAdminLogEnabled) Log.e("${NfcError.NFC_FORMATTABLE_WRITE_IO_ERROR.message}: ${e.message}", e)
-                    passWriteErrorToHandlers(NfcError.NFC_FORMATTABLE_WRITE_IO_ERROR)
-                } catch (e: FormatException) {
-                    if (isAdminLogEnabled) Log.e("${NfcError.NFC_FORMATTABLE_FORMAT_ERROR.message}: ${e.message}", e)
-                    passWriteErrorToHandlers(NfcError.NFC_FORMATTABLE_FORMAT_ERROR)
-                } catch (e: Exception) {
-                    if (isAdminLogEnabled) Log.e("${NfcError.UNKNOWN_FORMATTABLE_ERROR.message}: ${e.message}", e)
-                    passWriteErrorToHandlers(NfcError.UNKNOWN_FORMATTABLE_ERROR)
-                } finally {
-                    try {
-                        if (ndefFormatable.isConnected) {
-                            ndefFormatable.close()
-                        }
-                    } catch (e: IOException) {
-                        if (isAdminLogEnabled) {
-                            Log.e("${NfcAdminError.ERROR_CLOSING_NDEFORMATABLE_CONNECTION.message}: ${e.message}", e)
-                        }
-                        nfcStateListener?.onError(NfcAdminError.ERROR_CLOSING_NDEFORMATABLE_CONNECTION)
+                .forEach { handler ->
+                    if (handler.isHavePreparedMessageToWrite()) {
+                        handler.writeMessageToTag(tag)
+                    } else {
+                        handler.readMessageFromTag(tag)
                     }
                 }
-            } else {
-                if (isAdminLogEnabled) Log.e(NfcError.TAG_NOT_NDEF_COMPATIBLE.message)
-                passWriteErrorToHandlers(NfcError.TAG_NOT_NDEF_COMPATIBLE)
-            }
         }
     }
 
-    private fun passWriteErrorToHandlers(error: NfcError) {
-        handlers.forEach { it.onWriteError(error) }
-    }
-
-    companion object {
-         fun createDefaultNfcIntentFilters(): Array<IntentFilter> {
-            return NfcIntentFilterBuilder()
-                .addNdefDiscovered()
-                .addTechDiscovered()
-                .addTagDiscovered()
-                .build()
-        }
-
-         fun createDefaultNfcTechListArray(): Array<Array<String>> {
-            return NfcTechListBuilder()
-                .addIsoDep()
-                .addNdef()
-                .addNdefFormatable()
-                .addNfcA()
-                .addNfcB()
-                .addNfcF()
-                .addNfcV()
-                .build()
-        }
-    }
 }

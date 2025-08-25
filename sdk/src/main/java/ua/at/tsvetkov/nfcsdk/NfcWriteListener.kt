@@ -5,9 +5,23 @@ package ua.at.tsvetkov.nfcsdk
  */
 
 /**
- * Интерфейс для получения обратного вызова при записи на NFC-метку.
+ * Interface for receiving callbacks about NFC tag writing operations.
+ * Implement this listener to handle the results of attempting to write
+ * data to an NFC tag.
  */
 interface NfcWriteListener {
+
+    /**
+     * Called when data has been successfully written to the NFC tag.
+     */
     fun onNfcTagWritten()
+
+    /**
+     * Called when an error occurs during the NFC tag writing process.
+     *
+     * @param error An [NfcError] enum value indicating the specific error
+     *              that occurred during the write operation.
+     */
     fun onNfcWriteError(error: NfcError)
+
 }

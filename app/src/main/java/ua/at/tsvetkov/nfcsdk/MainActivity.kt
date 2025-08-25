@@ -1,7 +1,5 @@
 package ua.at.tsvetkov.nfcsdk
 
-import android.app.ComponentCaller
-import android.content.Intent
 import android.nfc.NfcAdapter
 import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
@@ -10,8 +8,8 @@ import androidx.navigation.ui.AppBarConfiguration
 import androidx.navigation.ui.setupActionBarWithNavController
 import androidx.navigation.ui.setupWithNavController
 import com.google.android.material.bottomnavigation.BottomNavigationView
-import ua.at.tsvetkov.nfcsdk.NfcAdmin.Companion.createDefaultNfcIntentFilters
 import ua.at.tsvetkov.nfcsdk.databinding.ActivityMainBinding
+import ua.at.tsvetkov.nfcsdk.handler.NdefWellKnownTextHandler
 import ua.at.tsvetkov.util.logger.Log
 
 class MainActivity : AppCompatActivity() {
@@ -20,9 +18,6 @@ class MainActivity : AppCompatActivity() {
 
     private val nfcAdmin = NfcAdmin(
         activity = this,
-        nfcIntentFilters = createDefaultNfcIntentFilters(),
-//        nfcTechListArray = createDefaultNfcTechListArray(),
-        nfcTechListArray = null,
         nfcStateListener = createNfcStateListener(),
         isAdminLogEnabled = true
     )
@@ -47,23 +42,24 @@ class MainActivity : AppCompatActivity() {
         setupActionBarWithNavController(navController, appBarConfiguration)
         navView.setupWithNavController(navController)
 
+        setupNfcHandlers()
+    }
+
+    private fun setupNfcHandlers() {
+        nfcAdmin.addHandler(NdefWellKnownTextHandler())
+        nfcAdmin.addHandler(CardTestHandler())
     }
 
     override fun onResume() {
         super.onResume()
-        nfcAdmin.registerStateReceiver()
-        nfcAdmin.enableForegroundDispatch()
+        nfcAdmin.registerNfcStateReceiver()
+        nfcAdmin.enableReaderModeWithDefaults()
     }
 
     override fun onPause() {
         super.onPause()
-        nfcAdmin.disableForegroundDispatch()
+        nfcAdmin.disableReaderMode()
         nfcAdmin.unregisterNfcStateReceiver()
-    }
-
-    override fun onNewIntent(intent: Intent, caller: ComponentCaller) {
-        super.onNewIntent(intent, caller)
-        nfcAdmin.onNewIntentInActivity(intent)
     }
 
     private fun createNfcStateListener(): NfcStateListener? {
@@ -78,13 +74,13 @@ class MainActivity : AppCompatActivity() {
                         // Here you can add logic for actions when NFC is enabled
                         // For example, automatically call nfcManager.enableForegroundDispatch()
                         // if this matches the logic of your application.
-                        nfcAdmin.enableForegroundDispatch()
+                        Log.i("NFC State: STATE_ON")
                     }
 
                     NfcAdapter.STATE_OFF -> {
                         // Here you can add logic for actions when NFC is turned off
                         // For example, inform the user or disable related functions.
-                        nfcAdmin.disableForegroundDispatch()
+                        Log.e("NFC State: STATE_OFF")
                     }
 
                     NfcAdapter.STATE_TURNING_ON -> {
