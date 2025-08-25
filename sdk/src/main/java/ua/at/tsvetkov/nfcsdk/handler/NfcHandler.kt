@@ -15,8 +15,8 @@ import ua.at.tsvetkov.nfcsdk.NfcWriteListener
  * @property nfcWriteListener Optional listener to be notified of write events (success or error).
  */
 abstract class NfcHandler<T, K>(
-    protected var nfcScanListener: NfcScanListener<T, K>? = null,
-    protected var nfcWriteListener: NfcWriteListener? = null,
+    var nfcScanListener: NfcScanListener<T, K>? = null,
+    var nfcWriteListener: NfcWriteListener? = null,
 ) {
     /**
      * A list of NFC technologies (e.g., `android.nfc.tech.Ndef`, `android.nfc.tech.IsoDep`)

@@ -49,8 +49,61 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun setupNfcHandlers() {
-        nfcAdmin.addHandler(NdefWellKnownTextHandler())
-        nfcAdmin.addHandler(CardTestHandler())
+        nfcAdmin.addHandler(
+            NdefWellKnownTextHandler(
+                languageCode = "en",
+                nfcScanListener =
+                    object : NfcScanListener<String, ByteArray> {
+                        override fun onNfcTagScanned(
+                            result: String,
+                            type: ByteArray,
+                        ) {
+                            Log.i("Not yet implemented")
+                        }
+
+                        override fun onNfcScanError(error: NfcError) {
+                            Log.e("Not yet implemented")
+                        }
+                    },
+                nfcWriteListener =
+                    object : NfcWriteListener {
+                        override fun onNfcTagWritten() {
+                            Log.i("Not yet implemented")
+                        }
+
+                        override fun onNfcWriteError(error: NfcError) {
+                            Log.e("Not yet implemented")
+                        }
+                    },
+            ),
+        )
+        nfcAdmin.addHandler(
+            CardTestHandler(
+                nfcScanListener =
+                    object : NfcScanListener<String, String> {
+                        override fun onNfcTagScanned(
+                            result: String,
+                            type: String,
+                        ) {
+                            Log.i("Not yet implemented")
+                        }
+
+                        override fun onNfcScanError(error: NfcError) {
+                            Log.e("Not yet implemented")
+                        }
+                    },
+                nfcWriteListener =
+                    object : NfcWriteListener {
+                        override fun onNfcTagWritten() {
+                            Log.i("Not yet implemented")
+                        }
+
+                        override fun onNfcWriteError(error: NfcError) {
+                            Log.e("Not yet implemented")
+                        }
+                    },
+            ),
+        )
     }
 
     override fun onResume() {

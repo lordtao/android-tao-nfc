@@ -10,6 +10,8 @@ import android.nfc.Tag
 import android.nfc.tech.Ndef
 import android.nfc.tech.NdefFormatable
 import ua.at.tsvetkov.nfcsdk.NfcError
+import ua.at.tsvetkov.nfcsdk.NfcScanListener
+import ua.at.tsvetkov.nfcsdk.NfcWriteListener
 import ua.at.tsvetkov.util.logger.Log
 import java.io.IOException
 import java.nio.charset.Charset
@@ -33,7 +35,9 @@ private const val SEVENTH_BIT = 0x80
  */
 class NdefWellKnownTextHandler(
     var languageCode: String = "en",
-) : NfcHandler<String, ByteArray>() {
+    nfcScanListener: NfcScanListener<String, ByteArray>? = null,
+    nfcWriteListener: NfcWriteListener? = null,
+) : NfcHandler<String, ByteArray>(nfcScanListener, nfcWriteListener) {
     override val techList = listOf(Ndef::class.java.name, NdefFormatable::class.java.name)
 
     override fun isHavePreparedMessageToWrite(): Boolean = preparedNdefMessage != null

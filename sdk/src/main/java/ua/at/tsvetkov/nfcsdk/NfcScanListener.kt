@@ -15,8 +15,8 @@ interface NfcScanListener<T, K> {
      *               is defined by the implementing [ua.at.tsvetkov.nfcsdk.handler.NfcHandler].
      * @param type An identifier for the type of NFC record that was scanned,
      *             providing context to the [result]. This could be, for example,
-     *             an NDEF record type like [android.nfc.NdefRecord.RTD_TEXT] or
-     *             [android.nfc.NdefRecord.RTD_URI].
+     *             an NDEF record type like [android.nfc.NdefRecord.RTD_TEXT],
+     *             [android.nfc.NdefRecord.RTD_URI] and etc.
      */
     fun onNfcTagScanned(
         result: T,

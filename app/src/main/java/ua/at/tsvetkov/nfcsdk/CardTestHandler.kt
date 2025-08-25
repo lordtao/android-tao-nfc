@@ -9,7 +9,10 @@ import ua.at.tsvetkov.util.logger.Log
 /**
  * Created by Alexandr Tsvetkov on 24.08.2025.
  */
-class CardTestHandler : NfcHandler<String, String>() {
+class CardTestHandler(
+    nfcScanListener: NfcScanListener<String, String>? = null,
+    nfcWriteListener: NfcWriteListener? = null,
+) : NfcHandler<String, String>(nfcScanListener, nfcWriteListener) {
     override val techList: List<String> = listOf(IsoDep::class.java.name, NfcA::class.java.name)
 
     override fun isHavePreparedMessageToWrite(): Boolean = false
