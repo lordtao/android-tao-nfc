@@ -2,9 +2,7 @@ package ua.at.tsvetkov.nfcsdk
 
 /**
  * Created by Alexandr Tsvetkov on 22.08.2025.
- */
-
-/**
+ *
  * Represents various errors that can occur during NFC operations,
  * particularly related to NDEF message parsing, reading, and writing.
  * Each error type includes a descriptive message.
@@ -15,9 +13,6 @@ enum class NfcError(
 ) {
     /** Indicates an error occurred while parsing an NDEF Text Record. */
     ERROR_PARSING_NDEF_TEXT_RECORD("Error parsing NDEF text record"),
-
-    /** Indicates an error occurred while parsing an NDEF URI Record. */
-    ERROR_PARSING_NDEF_URI_RECORD("Error parsing NDEF URI record"), // Added based on previous discussions
 
     /** Indicates that the encountered NDEF record type is not supported by the current handler. */
     UNSUPPORTED_NDFE_RECORD_TYPE("This handler does not support this NDEF record type."),
@@ -74,10 +69,7 @@ enum class NfcError(
     ERROR_CLOSING_NDEF_CONNECTION("Error closing Ndef connection"),
 
     /** Indicates an error occurred while trying to close an NdefFormatable connection. */
-    ERROR_CLOSING_NDEFORMATABLE_CONNECTION("Error closing NdefFormatable connection"),
-
-    /** Indicates that there is no message prepared for writing. */
-    NO_MESSAGE_TO_WRITE("No message has been prepared for writing to the tag."), // Added based on NdefWellKnownTextHandler
+    ERROR_CLOSING_NDEF_FORMATABLE_CONNECTION("Error closing NdefFormatable connection"),
     ;
 
     /**

@@ -2,6 +2,7 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.ktlint)
+    alias(libs.plugins.detekt)
 }
 
 ktlint {
@@ -9,6 +10,11 @@ ktlint {
     filter {
         exclude("**/generated/**")
     }
+}
+
+detekt {
+    config.setFrom(files("$projectDir/detekt.yml"))
+    buildUponDefaultConfig = true
 }
 
 android {

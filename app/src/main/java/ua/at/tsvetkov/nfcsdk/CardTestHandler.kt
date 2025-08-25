@@ -9,13 +9,10 @@ import ua.at.tsvetkov.util.logger.Log
 /**
  * Created by Alexandr Tsvetkov on 24.08.2025.
  */
-class CardTestHandler() : NfcHandler<String, String>() {
-
+class CardTestHandler : NfcHandler<String, String>() {
     override val techList: List<String> = listOf(IsoDep::class.java.name, NfcA::class.java.name)
 
-    override fun isHavePreparedMessageToWrite(): Boolean {
-        return false
-    }
+    override fun isHavePreparedMessageToWrite(): Boolean = false
 
     override fun readMessageFromTag(tag: Tag) {
         Log.i("We got a Card Tag for future processing: $tag")
@@ -28,5 +25,4 @@ class CardTestHandler() : NfcHandler<String, String>() {
     override fun prepareToWrite(data: String) {
         Log.i("Not yet implemented")
     }
-
 }

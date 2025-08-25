@@ -10,7 +10,6 @@ import androidx.lifecycle.ViewModelProvider
 import ua.at.tsvetkov.nfcsdk.databinding.FragmentWriteBinding
 
 class WriteFragment : Fragment() {
-
     private var _binding: FragmentWriteBinding? = null
 
     // This property is only valid between onCreateView and

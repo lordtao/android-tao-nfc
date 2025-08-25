@@ -5,9 +5,9 @@ import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 
 class ReadViewModel : ViewModel() {
-
-    private val _text = MutableLiveData<String>().apply {
-        value = "This is NFC Read Fragment"
-    }
+    private val _text =
+        MutableLiveData<String>().apply {
+            value = "This is NFC Read Fragment"
+        }
     val text: LiveData<String> = _text
 }

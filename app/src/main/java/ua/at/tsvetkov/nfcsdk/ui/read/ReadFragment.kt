@@ -10,7 +10,6 @@ import androidx.lifecycle.ViewModelProvider
 import ua.at.tsvetkov.nfcsdk.databinding.FragmentReadBinding
 
 class ReadFragment : Fragment() {
-
     private var _binding: FragmentReadBinding? = null
 
     // This property is only valid between onCreateView and
@@ -20,7 +19,7 @@ class ReadFragment : Fragment() {
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
-        savedInstanceState: Bundle?
+        savedInstanceState: Bundle?,
     ): View {
         val readViewModel =
             ViewModelProvider(this).get(ReadViewModel::class.java)

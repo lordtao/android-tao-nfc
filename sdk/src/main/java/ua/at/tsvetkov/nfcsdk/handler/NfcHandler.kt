@@ -47,7 +47,8 @@ abstract class NfcHandler<T, K>(
      * listed in this handler's [techList].
      *
      * @param tag The NFC [Tag] to check.
-     * @return `true` if the tag supports at least one technology from [techList], `false` otherwise or if the tag is null.
+     * @return `true` if the tag supports at least one technology from [techList],
+     * `false` otherwise or if the tag is null.
      */
     fun containsSupportedRecord(tag: Tag?): Boolean {
         tag
