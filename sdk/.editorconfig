@@ -1,0 +1,11 @@
+# EditorConfig helps maintain consistent_indent_style coding styles for multiple
+# developers working on the same project across various editors and IDEs.
+# editorconfig.org
+
+# Top-most EditorConfig file
+root = true
+
+# Kotlin files
+[*.{kt,kts}]
+ktlint_code_style = android_studio
+max_line_length = 120

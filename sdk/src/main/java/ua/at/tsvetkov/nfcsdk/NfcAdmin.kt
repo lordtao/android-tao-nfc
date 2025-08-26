@@ -31,7 +31,7 @@ import ua.at.tsvetkov.util.logger.Log
 class NfcAdmin(
     private val activity: Activity,
     private var nfcStateListener: NfcStateListener? = null,
-    private var isAdminLogEnabled: Boolean = false,
+    private var isAdminLogEnabled: Boolean = false
 ) : NfcAdapter.ReaderCallback {
     private val nfcAdapter: NfcAdapter? by lazy { NfcAdapter.getDefaultAdapter(activity) }
 
@@ -39,12 +39,19 @@ class NfcAdmin(
 
     private val nfcStateReceiver =
         object : BroadcastReceiver() {
-            override fun onReceive(
-                context: Context?,
-                intent: Intent?,
-            ) {
+            override fun onReceive(context: Context?, intent: Intent?) {
                 if (intent?.action == NfcAdapter.ACTION_ADAPTER_STATE_CHANGED) {
-                    val state = intent.getIntExtra(NfcAdapter.EXTRA_ADAPTER_STATE, NfcAdapter.STATE_OFF)
+                    val nfcAdapterState = intent.getIntExtra(
+                        NfcAdapter.EXTRA_ADAPTER_STATE,
+                        NfcAdapter.STATE_OFF
+                    )
+                    val state = when (nfcAdapterState) {
+                        NfcAdapter.STATE_ON -> NfcAdminState.NfcOn
+                        NfcAdapter.STATE_OFF -> NfcAdminState.NfcOff
+                        NfcAdapter.STATE_TURNING_ON -> NfcAdminState.NfcTurningOn
+                        NfcAdapter.STATE_TURNING_OFF -> NfcAdminState.NfcTurningOff
+                        else -> NfcAdminState.NfcUndefined
+                    }
                     nfcStateListener?.onNfcStateChanged(state)
                 }
             }
@@ -69,10 +76,10 @@ class NfcAdmin(
      * Adds an [NfcHandler] to the list of handlers that will process discovered NFC tags.
      * Each handler can be responsible for specific types of NFC data.
      *
-     * @param handler The [NfcHandler] instance to add.
+     * @param handlers The [NfcHandler] instances to add.
      */
-    fun addHandler(handler: NfcHandler<*, *>) {
-        handlers.add(handler)
+    fun addHandlers(vararg handlers: NfcHandler<*, *>) {
+        handlers.forEach { this.handlers.add(it) }
     }
 
     /**
@@ -104,31 +111,44 @@ class NfcAdmin(
     }
 
     /**
-     * Enables NFC reader mode with a default set of flags.
-     * The default flags include:
+     * Enables NFC reader mode with a predefined set of commonly used flags.
+     *
+     * This method simplifies the process of enabling reader mode by defaulting to a
+     * comprehensive set of NFC technologies and options. The default flags include:
      * - [NfcAdapter.FLAG_READER_NFC_A]
      * - [NfcAdapter.FLAG_READER_NFC_B]
      * - [NfcAdapter.FLAG_READER_NFC_F]
      * - [NfcAdapter.FLAG_READER_NFC_V]
      * - [NfcAdapter.FLAG_READER_NFC_BARCODE]
      * - [NfcAdapter.FLAG_READER_SKIP_NDEF_CHECK]
-     * - [NfcAdapter.FLAG_READER_NO_PLATFORM_SOUNDS]
      *
-     * This method should typically be called in the `onResume` lifecycle method of an Activity.
-     * When reader mode is enabled, the calling Activity has priority in handling discovered NFC tags.
+     * Reader mode gives the calling Activity priority in handling discovered NFC tags.
+     * It is typically called in the `onResume()` lifecycle method of an Activity and
+     * paired with a call to [disableReaderMode] in `onPause()`.
      *
-     * @param extras An optional [Bundle] of extra data. Can be `null`.
-     *               This can be used to pass specific polling loop parameters.
+     * This method internally calls [enableReaderMode] with the configured flags.
+     *
+     * @param isOnSound If `false` (default), [NfcAdapter.FLAG_READER_NO_PLATFORM_SOUNDS]
+     *                  will be added to the flags, muting the default NFC discovery sound.
+     *                  If `true`, the platform's default NFC sound will play upon tag discovery.
+     * @param extras An optional [Bundle] of extra data to be passed to the underlying
+     *               [NfcAdapter.enableReaderMode] call. This can be used to specify
+     *               additional parameters for the NFC polling loop, such as a delay.
+     *               Defaults to `null`.
+     * @see enableReaderMode
+     * @see NfcAdapter.enableReaderMode
      */
-    fun enableReaderModeWithDefaults(extras: Bundle? = null) {
-        val readerFlags =
+    fun enableReaderModeWithDefaults(isOnSound: Boolean = false, extras: Bundle? = null) {
+        val baseFlags =
             NfcAdapter.FLAG_READER_NFC_A or
                 NfcAdapter.FLAG_READER_NFC_B or
                 NfcAdapter.FLAG_READER_NFC_F or
                 NfcAdapter.FLAG_READER_NFC_V or
                 NfcAdapter.FLAG_READER_NFC_BARCODE or
-                NfcAdapter.FLAG_READER_SKIP_NDEF_CHECK or
-                NfcAdapter.FLAG_READER_NO_PLATFORM_SOUNDS
+                NfcAdapter.FLAG_READER_SKIP_NDEF_CHECK
+
+        val readerFlags: Int =
+            baseFlags or if (!isOnSound) NfcAdapter.FLAG_READER_NO_PLATFORM_SOUNDS else 0
         enableReaderMode(readerFlags, extras)
     }
 
@@ -148,24 +168,27 @@ class NfcAdmin(
      *               This can be used to pass specific polling loop parameters, such as delay.
      * @see NfcAdapter.enableReaderMode
      */
-    fun enableReaderMode(
-        flags: Int,
-        extras: Bundle? = null,
-    ) {
+    fun enableReaderMode(flags: Int, extras: Bundle? = null) {
         if (nfcAdapter == null) {
-            if (isAdminLogEnabled) Log.w("${NfcAdminError.NFC_ADAPTER_IS_NOT_AVAILABLE}. Reader mode not enabled.")
-            nfcStateListener?.onError(NfcAdminError.NFC_ADAPTER_IS_NOT_AVAILABLE)
+            if (isAdminLogEnabled) {
+                Log.w("NFC Adapter is not available on this device. Reader mode not enabled.")
+            }
+            nfcStateListener?.onNfcStateChanged(NfcAdminState.NfcNotAvailable)
             return
         }
         if (nfcAdapter?.isEnabled == false) {
-            if (isAdminLogEnabled) Log.w("${NfcAdminError.NFC_ADAPTER_IS_NOT_ENABLED}. Reader mode not enabled.")
-            nfcStateListener?.onError(NfcAdminError.NFC_ADAPTER_IS_NOT_ENABLED)
+            if (isAdminLogEnabled) {
+                Log.w("NFC Adapter is not enabled. Reader mode not enabled.")
+            }
+            nfcStateListener?.onNfcStateChanged(NfcAdminState.NfcOff)
             return
         }
         try {
             nfcAdapter?.enableReaderMode(activity, this, flags, extras)
-            if (isAdminLogEnabled) Log.d("Reader mode is ON.")
-            nfcStateListener?.onNfcStarted()
+            nfcStateListener?.onNfcStateChanged(NfcAdminState.NfcOn)
+            if (isAdminLogEnabled) {
+                Log.i("NFC Adapter is enabled. Reader mode enabled.")
+            }
         } catch (e: Exception) {
             if (isAdminLogEnabled) {
                 Log.e("${NfcAdminError.ERROR_WHEN_TURNING_ON_READER_MODE}: ${e.message}", e)
@@ -188,7 +211,7 @@ class NfcAdmin(
         }
         try {
             nfcAdapter?.disableReaderMode(activity)
-            if (isAdminLogEnabled) Log.d("Reader mode is OFF.")
+            nfcStateListener?.onNfcStateChanged(NfcAdminState.NfcOff)
         } catch (e: Exception) {
             if (isAdminLogEnabled) {
                 Log.e("${NfcAdminError.ERROR_WHILE_SHUTTING_DOWN_READER_MODE}: ${e.message}", e)
@@ -213,17 +236,15 @@ class NfcAdmin(
             return
         }
 
-        if (isAdminLogEnabled) Log.d("Tag discovered in ReaderMode: $tag")
+        if (isAdminLogEnabled) Log.d("Tag discovered: $tag")
 
         activity.runOnUiThread {
             handlers
-                .filter {
-                    it.containsSupportedRecord(tag)
-                }.forEach { handler ->
-                    if (handler.isHavePreparedMessageToWrite()) {
-                        handler.writeMessageToTag(tag)
+                .forEach { handler ->
+                    if (handler.isHavePreparedDataToWrite()) {
+                        handler.writeDataToTag(tag)
                     } else {
-                        handler.readMessageFromTag(tag)
+                        handler.readDataFromTag(tag)
                     }
                 }
         }

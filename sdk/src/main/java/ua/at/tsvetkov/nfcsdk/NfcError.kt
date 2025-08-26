@@ -1,79 +1,52 @@
 package ua.at.tsvetkov.nfcsdk
 
 /**
- * Created by Alexandr Tsvetkov on 22.08.2025.
+ *  Created by Alexandr Tsvetkov on 26.08.2025.
  *
- * Represents various errors that can occur during NFC operations,
- * particularly related to NDEF message parsing, reading, and writing.
- * Each error type includes a descriptive message.
+ * Defines various error states that can occur during NFC operations.
+ * Each error has a default message that can be used for logging or display.
+ *
+ * @param message A human-readable message describing the administrative error.
  */
-enum class NfcError(
-    /** A human-readable message describing the error. */
-    val message: String,
-) {
-    /** Indicates an error occurred while parsing an NDEF Text Record. */
-    ERROR_PARSING_NDEF_TEXT_RECORD("Error parsing NDEF text record"),
+enum class NfcError(val message: String) {
+    /** Tag is not NDEF formatted and NDEF operations cannot be performed. */
+    TAG_NOT_NDEF_FORMATTED("Tag is not NDEF formatted."),
 
-    /** Indicates that the encountered NDEF record type is not supported by the current handler. */
-    UNSUPPORTED_NDFE_RECORD_TYPE("This handler does not support this NDEF record type."),
+    /** NDEF message is null or could not be obtained from the tag, possibly an empty tag or read issue. */
+    NDEF_MESSAGE_NULL("NDEF message is null or could not be obtained from the tag."),
 
-    /** Indicates that the tag is NDEF formattable but currently contains no NDEF message. */
-    NDEF_FORMATTABLE_BUT_EMPTY("Tag is NDEF formattable but contains no NDEF message."),
+    /** The NFC tag is not writable (e.g., read-only or protected). */
+    TAG_NOT_WRITABLE("Tag is not writable."),
 
-    /** Indicates that the tag does not support NDEF technology. */
-    NDEF_NOT_SUPPORTED("Tag does not support NDEF."),
-
-    /** Indicates that there is no NDEF message present on the tag (the message is null). */
-    NO_NDEF_MESSAGE("No NDEF message on the tag (null)."),
-
-    /** Indicates that an NDEF message was found, but it contains no NDEF records. */
-    NO_NDEF_RECORDS("NDEF message contains no records."),
-
-    /** Indicates a general I/O error occurred during NFC read or write operations. */
-    NFC_IO_ERROR("Error reading/writing NFC (IO exception)."),
-
-    /** Indicates a format exception occurred during NFC operations (e.g., malformed NDEF message). */
-    NFC_FORMAT_ERROR("NFC format exception."),
-
-    /** Indicates an unknown or unspecified error occurred while reading from an NFC tag. */
-    UNKNOWN_READ_ERROR("Unknown error reading NFC."),
-
-    /** Indicates that the NFC tag is read-only and cannot be written to. */
-    TAG_READ_ONLY("Tag is not writable (read-only)."),
-
-    /** Indicates that the data to be written exceeds the maximum storage capacity of the NFC tag. */
-    DATA_TOO_LARGE("Data size exceeds maximum tag size."),
-
-    /** Indicates an I/O error occurred specifically during an NFC write operation. */
-    NFC_WRITE_IO_ERROR("Error writing NFC (IO exception)."),
-
-    /** Indicates a format exception occurred specifically during an NFC write operation. */
-    NFC_WRITE_FORMAT_ERROR("Format exception when writing NFC."),
-
-    /** Indicates an unknown or unspecified error occurred while writing to an NFC tag. */
-    UNKNOWN_WRITE_ERROR("Unknown error writing NFC."),
-
-    /** Indicates an I/O error occurred while formatting a tag and then writing to it. */
-    NFC_FORMATTABLE_WRITE_IO_ERROR("Error formatting/writing NFC (IO exception)."),
-
-    /** Indicates a format exception occurred while formatting a tag and then writing to it. */
-    NFC_FORMATTABLE_FORMAT_ERROR("Format exception when formatting/writing NFC."),
-
-    /** Indicates an unknown error occurred while formatting a tag and then writing to it. */
-    UNKNOWN_FORMATTABLE_ERROR("Unknown error formatting/writing NFC."),
-
-    /** Indicates that the tag does not support NDEF and also cannot be formatted to NDEF. */
-    TAG_NOT_NDEF_COMPATIBLE("Tag does not support NDEF and cannot be formatted."),
-
-    /** Indicates an error occurred while trying to close an Ndef connection. */
-    ERROR_CLOSING_NDEF_CONNECTION("Error closing Ndef connection"),
-
-    /** Indicates an error occurred while trying to close an NdefFormatable connection. */
-    ERROR_CLOSING_NDEF_FORMATABLE_CONNECTION("Error closing NdefFormatable connection"),
-    ;
+    /** There is not enough space on the NFC tag to write the prepared NDEF message. */
+    NOT_ENOUGH_SPACE("Not enough space on the tag."),
 
     /**
-     * Returns the human-readable message associated with this error.
+     * The tag is not NDEF compliant for writing operations.
+     * This means Ndef.get(tag) is null and NdefFormatable.get(tag) is also null.
+     */
+    TAG_NOT_NDEF_COMPLIANT("Tag is not NDEF writable or formattable."),
+
+    /** No data (e.g., text or URI) has been prepared for writing to the tag. */
+    NO_DATA_TO_WRITE("No data prepared to write."),
+
+    /** An IOException occurred during an NFC read operation. */
+    IO_EXCEPTION_WHILE_READING("IOException occurred while reading from the NFC tag."),
+
+    /** A general, non-IOException error occurred during an NFC read operation. */
+    GENERAL_READ_ERROR("A general error occurred while reading from the NFC tag."),
+
+    /** An IOException occurred during an NFC write operation. */
+    IO_EXCEPTION_WHILE_WRITING("IOException occurred while writing to the NFC tag."),
+
+    /** A general, non-IOException error occurred during an NFC write operation. */
+    GENERAL_WRITE_ERROR("A general error occurred while writing to the NFC tag."),
+
+    /** An Exception occurred during an NFC close operation. */
+    CLOSE_CONNECTION_ERROR("An error occurred while closing the connection to the NFC tag.");
+
+    /**
+     * Returns the human-readable message associated with this administrative error.
      * @return The error message string.
      */
     override fun toString(): String = message

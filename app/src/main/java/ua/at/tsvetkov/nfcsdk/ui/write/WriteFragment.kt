@@ -10,17 +10,14 @@ import androidx.lifecycle.ViewModelProvider
 import ua.at.tsvetkov.nfcsdk.databinding.FragmentWriteBinding
 
 class WriteFragment : Fragment() {
+    @Suppress("ktlint:standard:backing-property-naming")
     private var _binding: FragmentWriteBinding? = null
 
     // This property is only valid between onCreateView and
     // onDestroyView.
     private val binding get() = _binding!!
 
-    override fun onCreateView(
-        inflater: LayoutInflater,
-        container: ViewGroup?,
-        savedInstanceState: Bundle?,
-    ): View {
+    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         val writeViewModel =
             ViewModelProvider(this).get(WriteViewModel::class.java)
 
