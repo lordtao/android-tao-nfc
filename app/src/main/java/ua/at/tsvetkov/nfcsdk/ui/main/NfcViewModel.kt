@@ -116,7 +116,7 @@ class NfcViewModel : ViewModel() {
         nfcTeach.postValue("Teach: $teach")
     }
 
-//    val nfcMifareUltralightHandler = NfcMifareUltralightStringHandler(
+//    val nfcMifareUltralightHandler = NfcMifareUltralightTextHandler(
 //        nfcReadListener = object : NfcReadListener<String> {
 //            override fun onNfcTagScanned(result: List<String>) {
 //                createResultsList(result)

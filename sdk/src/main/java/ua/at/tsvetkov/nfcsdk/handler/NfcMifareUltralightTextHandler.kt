@@ -14,7 +14,7 @@ import ua.at.tsvetkov.nfcsdk.NfcWriteListener
 import ua.at.tsvetkov.nfcsdk.parser.MifareUltralightStringParser
 import ua.at.tsvetkov.nfcsdk.preparer.MifareUltralightStringPreparer
 
-class NfcMifareUltralightStringHandler(
+class NfcMifareUltralightTextHandler(
     nfcReadListener: NfcReadListener<String>?, // R = String
     nfcWriteListener: NfcWriteListener?,
     private val startDataPage: Int = 4,
