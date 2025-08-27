@@ -37,6 +37,8 @@ class NfcAdmin(
 
     private val handlers: MutableList<NfcHandler<*, *>> = mutableListOf()
 
+    private var currentTechs: List<String> = listOf()
+
     private val nfcStateReceiver =
         object : BroadcastReceiver() {
             override fun onReceive(context: Context?, intent: Intent?) {
@@ -56,6 +58,27 @@ class NfcAdmin(
                 }
             }
         }
+
+    /**
+     * Gets the list of NFC technologies from the last processed tag.
+     *
+     * Each string is a fully qualified class name (e.g., "android.nfc.tech.NfcA").
+     *
+     * @return [List] of technology class names, or an empty list if none are set.
+     */
+    fun getCurrentTechs(): List<String> = currentTechs
+
+    /**
+     * Sets the list of NFC technologies for the currently processed tag.
+     *
+     * Typically called after discovering a tag and getting its technologies
+     * via [android.nfc.Tag.getTechList].
+     *
+     * @param currentTechs A [List] of fully qualified NFC technology class names.
+     */
+    fun setCurrentTechs(currentTechs: List<String>) {
+        this.currentTechs = currentTechs
+    }
 
     /**
      * Checks if the device has NFC hardware.
@@ -144,8 +167,7 @@ class NfcAdmin(
                 NfcAdapter.FLAG_READER_NFC_B or
                 NfcAdapter.FLAG_READER_NFC_F or
                 NfcAdapter.FLAG_READER_NFC_V or
-                NfcAdapter.FLAG_READER_NFC_BARCODE or
-                NfcAdapter.FLAG_READER_SKIP_NDEF_CHECK
+                NfcAdapter.FLAG_READER_NFC_BARCODE
 
         val readerFlags: Int =
             baseFlags or if (!isOnSound) NfcAdapter.FLAG_READER_NO_PLATFORM_SOUNDS else 0
@@ -163,7 +185,7 @@ class NfcAdmin(
      * This method should typically be called in the `onResume` lifecycle method of an Activity.
      *
      * @param flags A bitmask of flags indicating the NFC technologies to poll for.
-     *              For example, [NfcAdapter.FLAG_READER_NFC_A], [NfcAdapter.FLAG_READER_ISO_DEP].
+     *              For example, [NfcAdapter.FLAG_READER_NFC_A], [NfcAdapter.FLAG_READER_NFC_B].
      * @param extras An optional [Bundle] of extra data. Can be `null`.
      *               This can be used to pass specific polling loop parameters, such as delay.
      * @see NfcAdapter.enableReaderMode
@@ -237,10 +259,13 @@ class NfcAdmin(
         }
 
         if (isAdminLogEnabled) Log.d("Tag discovered: $tag")
+        currentTechs = tag.techList.asList()
 
         activity.runOnUiThread {
             handlers
                 .forEach { handler ->
+                    handler.setCurrentTechs(currentTechs)
+                    handler.onScanEvent(NfcMessage.START_HANDLING)
                     if (handler.isHavePreparedDataToWrite()) {
                         handler.writeDataToTag(tag)
                     } else {

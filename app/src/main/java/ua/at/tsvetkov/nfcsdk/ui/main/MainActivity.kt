@@ -13,7 +13,9 @@ import ua.at.tsvetkov.nfcsdk.R
 import ua.at.tsvetkov.nfcsdk.databinding.ActivityMainBinding
 
 class MainActivity : AppCompatActivity() {
-    private lateinit var binding: ActivityMainBinding
+
+    private var _binding: ActivityMainBinding? = null
+    private val binding get() = _binding!!
 
     private val nfcViewModel: NfcViewModel by viewModels()
 
@@ -22,8 +24,11 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        binding = ActivityMainBinding.inflate(layoutInflater)
+        _binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
+
+        binding.viewModel = nfcViewModel
+        binding.lifecycleOwner = this
 
         val navView: BottomNavigationView = binding.navView
 
@@ -49,11 +54,12 @@ class MainActivity : AppCompatActivity() {
         nfcAdmin = NfcAdmin(
             activity = this,
             isAdminLogEnabled = true,
-            nfcStateListener = nfcViewModel.nfcAdminStateListener
+            nfcStateListener = nfcViewModel.stateListener
         )
         nfcAdmin.addHandlers(
-            nfcViewModel.nfcTextHandler,
-            nfcViewModel.nfcUriHandler
+            nfcViewModel.textHandler,
+            nfcViewModel.uriHandler
+//            nfcViewModel.nfcMifareUltralightHandler
         )
     }
 
@@ -67,5 +73,11 @@ class MainActivity : AppCompatActivity() {
         super.onPause()
         nfcAdmin.disableReaderMode()
         nfcAdmin.unregisterNfcStateReceiver()
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        binding.lifecycleOwner = null
+        _binding = null
     }
 }

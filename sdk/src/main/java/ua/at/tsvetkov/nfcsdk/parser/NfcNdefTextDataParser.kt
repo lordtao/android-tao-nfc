@@ -18,7 +18,7 @@ class NfcNdefTextDataParser : NfcDataParser<NdefMessage, String> {
     override fun parse(data: NdefMessage): List<String> {
         val list = mutableListOf<String>()
         for (record in data.records) {
-            if (record.tnf == NdefRecord.TNF_WELL_KNOWN && record.type.contentEquals(NdefRecord.RTD_URI)) {
+            if (record.tnf == NdefRecord.TNF_WELL_KNOWN && record.type.contentEquals(NdefRecord.RTD_TEXT)) {
                 list.add(record.toString())
             }
         }

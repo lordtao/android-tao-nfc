@@ -11,13 +11,13 @@ interface NfcWriteListener {
     /**
      * Called when data has been successfully written to the NFC tag.
      */
-    fun onNfcWriteSuccess()
+    fun onWritten()
 
     /**
-     * Called when an error occurs during the NFC tag writing process.
+     * Called when an event/error occurs during the NFC tag writing process.
      *
-     * @param error An [NfcError] enum value indicating the specific error
+     * @param message An [NfcMessage] enum value indicating the specific event/error
      *              that occurred during the write operation.
      */
-    fun onNfcWriteError(error: NfcError, throwable: Throwable? = null)
+    fun onWriteEvent(message: NfcMessage, throwable: Throwable? = null)
 }

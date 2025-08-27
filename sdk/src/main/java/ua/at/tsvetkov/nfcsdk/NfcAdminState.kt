@@ -44,4 +44,6 @@ sealed class NfcAdminState(val message: String) {
      * has been determined, or if the NFC status cannot be clearly ascertained.
      */
     object NfcUndefined : NfcAdminState("Undefined or indeterminate state of the NFC adapter.")
+
+    fun getName() = this::class.simpleName
 }

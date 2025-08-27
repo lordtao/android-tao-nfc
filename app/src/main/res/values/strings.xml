@@ -3,4 +3,13 @@
     <string name="title_status">NFC Status</string>
     <string name="title_read">NFC Read</string>
     <string name="title_write">NFC Write</string>
+    <string name="read_nfc_tag">Read NFC Tag</string>
+    <string name="hold_your_phone_near_an_nfc_tag_to_read_its_content">Hold your phone near an NFC tag to read its content.</string>
+    <string name="no_results_yet">No results yet</string>
+    <string name="write_nfc_tag">Write NFC Tag</string>
+    <string name="enter_text_or_uri">Enter Text or URI (English)</string>
+    <string name="write_to_tag">Set for Write</string>
+    <string name="clear_tag">Prepare to Clear NFC Tag</string>
+    <string name="clear_prepared">Clear prepared data</string>
+    <string name="clear_output">Clear output</string>
 </resources>

@@ -12,6 +12,7 @@ lifecycleLivedataKtx = "2.9.2"
 lifecycleViewmodelKtx = "2.9.2"
 navigationFragmentKtx = "2.9.3"
 navigationUiKtx = "2.9.3"
+databindingRuntime = "8.12.1"
 ktlintGradle = "13.1.0"
 detekt = "1.23.8"
 mockitoCore = "5.19.0"
@@ -27,6 +28,7 @@ androidx-lifecycle-livedata-ktx = { group = "androidx.lifecycle", name = "lifecy
 androidx-lifecycle-viewmodel-ktx = { group = "androidx.lifecycle", name = "lifecycle-viewmodel-ktx", version.ref = "lifecycleViewmodelKtx" }
 androidx-navigation-fragment-ktx = { group = "androidx.navigation", name = "navigation-fragment-ktx", version.ref = "navigationFragmentKtx" }
 androidx-navigation-ui-ktx = { group = "androidx.navigation", name = "navigation-ui-ktx", version.ref = "navigationUiKtx" }
+androidx-databinding-runtime = { group = "androidx.databinding", name = "databinding-runtime", version.ref = "databindingRuntime" }
 
 # Testing
 junit = { group = "junit", name = "junit", version.ref = "junit" }

@@ -4,35 +4,31 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.TextView
 import androidx.fragment.app.Fragment
-import androidx.lifecycle.ViewModelProvider
+import androidx.fragment.app.activityViewModels
 import ua.at.tsvetkov.nfcsdk.databinding.FragmentWriteBinding
+import ua.at.tsvetkov.nfcsdk.ui.main.NfcViewModel
 
 class WriteFragment : Fragment() {
-    @Suppress("ktlint:standard:backing-property-naming")
-    private var _binding: FragmentWriteBinding? = null
 
-    // This property is only valid between onCreateView and
-    // onDestroyView.
+    private var _binding: FragmentWriteBinding? = null
     private val binding get() = _binding!!
 
-    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
-        val writeViewModel =
-            ViewModelProvider(this).get(WriteViewModel::class.java)
+    private val nfcViewModel: NfcViewModel by activityViewModels()
 
+    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         _binding = FragmentWriteBinding.inflate(inflater, container, false)
         val root: View = binding.root
 
-        val textView: TextView = binding.textWriteTitle
-        writeViewModel.text.observe(viewLifecycleOwner) {
-            textView.text = it
-        }
+        binding.viewModel = nfcViewModel
+        binding.lifecycleOwner = this
+
         return root
     }
 
     override fun onDestroyView() {
         super.onDestroyView()
+        binding.lifecycleOwner = null
         _binding = null
     }
 }
