@@ -51,11 +51,11 @@ class NfcViewModel : ViewModel() {
                 NfcAdminState.NfcTurningOn -> nfcEnabled.postValue("NFC Enabled: turning on...")
                 else -> Unit
             }
-            Log.i("NFC State: ${state.getName()}. ${state.message}")
+            Log.i("NFC State: ${state.getName()}. $state")
         }
 
         override fun onError(error: NfcAdminError) {
-            Log.e("NFC Admin Error: ${error.message}")
+            Log.e("NFC Admin Error: $error")
         }
     }
 
@@ -69,17 +69,18 @@ class NfcViewModel : ViewModel() {
             override fun onReadEvent(message: NfcMessage, throwable: Throwable?) {
                 checkEmptyTag(message)
                 fillTeach()
-                Log.w("NFC NDEF: ${message.name} (${message.message})")
+                Log.w("NFC NDEF: ${message.name} ($message)")
             }
         },
         nfcWriteListener = object : NfcWriteListener {
             override fun onWritten() {
                 nfcWriteStatus.postValue("Write success")
+                nfcTextToWrite.postValue("")
             }
 
             override fun onWriteEvent(message: NfcMessage, throwable: Throwable?) {
                 nfcWriteStatus.postValue(message.message)
-                Log.w("NFC NDEF: ${message.name} (${message.message})")
+                Log.w("NFC NDEF: ${message.name} ($message)")
             }
         }
     )
@@ -92,17 +93,18 @@ class NfcViewModel : ViewModel() {
 
             override fun onReadEvent(message: NfcMessage, throwable: Throwable?) {
                 checkEmptyTag(message)
-                Log.w("NFC NDEF: ${message.name} (${message.message})")
+                Log.w("NFC NDEF: ${message.name} ($message)")
             }
         },
         nfcWriteListener = object : NfcWriteListener {
             override fun onWritten() {
                 nfcWriteStatus.postValue("Write success")
+                nfcTextToWrite.postValue("")
             }
 
             override fun onWriteEvent(message: NfcMessage, throwable: Throwable?) {
                 nfcWriteStatus.postValue(message.message)
-                Log.w("NFC NDEF: ${message.name} (${message.message})")
+                Log.w("NFC NDEF: ${message.name} ($message)")
             }
         }
     )
@@ -162,8 +164,10 @@ class NfcViewModel : ViewModel() {
         }
         @Suppress("SwallowedException")
         try {
+            // For Uri
             uriHandler.prepareToWrite(listOf(string.toUri()))
-        } catch (e: Exception) {
+        } catch (_: Exception) {
+            // For Text
             textHandler.prepareToWrite(listOf(string))
         }
 //        nfcMifareUltralightHandler.prepareToWrite(listOf(string))

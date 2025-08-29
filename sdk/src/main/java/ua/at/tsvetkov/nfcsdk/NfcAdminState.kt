@@ -46,4 +46,10 @@ sealed class NfcAdminState(val message: String) {
     object NfcUndefined : NfcAdminState("Undefined or indeterminate state of the NFC adapter.")
 
     fun getName() = this::class.simpleName
+
+    /**
+     * Returns the human-readable message associated with NFC adapter state.
+     * @return The error message string.
+     */
+    override fun toString(): String = message
 }
