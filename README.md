@@ -12,9 +12,11 @@ The NFC SDK module simplifies Near Field Communication (NFC) interactions in And
     *   Create custom `NfcHandler` implementations for different NFC tag technologies.
     *   Implement custom `NfcDataParser` and `NfcDataPreparer` to support various data encodings and application-specific data structures.
 *   **Listeners**: Clear callbacks for NFC adapter state changes, tag read results (data or errors), and write operation outcomes.
-*   **Error Handling**: Standardized `NfcError` enum for detailed error reporting.
+*   **Error Handling**: Standardized `NfcAdminError` enum for detailed error reporting.
 
 ## Setup
+To get started quickly, the demo project provides a comprehensive setup example.
+https://github.com/lordtao/nfc-sdk/tree/master/app
 
 ### 1. Add SDK Dependency
 
@@ -311,7 +313,6 @@ class YourTextDataPreparer : NfcDataPreparer<String, NdefMessage> {
     }
 }
 ```
-*(**Note**: The method `nfcAdmin.setNfcHandler(...)` is assumed. Replace with the actual method provided by your `NfcAdmin` class to assign an `NfcHandler` instance.)*
 
 ### 3. Handle Activity Lifecycle and NFC Intents
 
@@ -359,9 +360,9 @@ fun onWriteTextButtonClicked(textToWrite: String) {
 ```
 The result of the write operation will be reported via `NfcWriteListener`.
 
-### 6. Cleaning/Erasing an NDEF Tag
+### 6. Cleaning/Erasing 
 
-To "clean" an NDEF tag (i.e., write an empty NDEF message to it):
+The ability to clear a tag depends on its specific technology and specifications. For NDEF tags, this is achieved by writing an empty record, but other tag types may require a different process.
 
 1.  Call the `prepareCleaningData()` method on your `NdefHandler` instance.
 2.  Tap the tag. The write operation will then write the empty message.
@@ -500,7 +501,8 @@ class MifareCustomHandler(
 
 ## Troubleshooting
 
-*   **NFC Not Working**: Ensure NFC is enabled in the device settings.
+*   **Android Studio**: As of now, Android Studio emulators lack support for NFC emulation. A physical device is necessary to test NFC features.
+*   **NFC Not Working**: Make sure your device supports NFC. Ensure NFC is enabled in the device settings.
 *   **App Not Detecting Tags**:
     *   Verify `AndroidManifest.xml` permissions and intent filters are correct.
     *   Ensure `NfcAdmin.enableNfcDispatch()` is called in `onResume` and `disableNfcDispatch()` in `onPause`.
