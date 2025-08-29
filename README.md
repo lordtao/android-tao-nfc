@@ -30,11 +30,6 @@ If this SDK is a local module (e.g., named `sdk`) within your Android Studio pro
 dependencies {
     implementation(project(":sdk"))
 }
-
-// build.gradle (Groovy DSL)
-// dependencies {
-//     implementation project(':sdk')
-// }
 ```
 
 #### b. If the SDK is a Local `.aar` File
@@ -52,12 +47,6 @@ If you have the SDK as a precompiled `.aar` file (e.g., `nfc-sdk.aar`), follow t
         implementation(files("libs/nfc-sdk.aar")) // Adjust filename if different
     }
     ```
-    For `build.gradle` (Groovy DSL):
-    ```gradle
-    dependencies {
-        // ... other dependencies
-        implementation files('libs/nfc-sdk.aar') // Adjust filename if different
-    }
     ```
     If you have multiple `.aar` files in the `libs` directory and want to include all of them, you can also do:
 
@@ -66,13 +55,6 @@ If you have the SDK as a precompiled `.aar` file (e.g., `nfc-sdk.aar`), follow t
     dependencies {
         // ... other dependencies
         implementation(fileTree(mapOf("dir" to "libs", "include" to listOf("*.aar"))))
-    }
-    ```
-    For `build.gradle` (Groovy DSL):
-    ```gradle
-    dependencies {
-        // ... other dependencies
-        implementation fileTree(dir: 'libs', include: ['*.aar'])
     }
     ```
 4.  **Sync Project**: After making these changes, sync your Android Studio project with the Gradle files.
