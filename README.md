@@ -1,4 +1,4 @@
-# TAO NFC SDK 
+# TAO NFC SDK (Android)
 
 The NFC SDK library simplifies Near Field Communication (NFC) interactions in Android applications. It provides a higher-level abstraction over the native Android NFC API, making it easier to read from, write to, and manage NFC tags, with a focus on NDEF (NFC Data Exchange Format) data. The SDK is designed to be extensible, allowing developers to add support for various tag technologies and custom data formats.
 
