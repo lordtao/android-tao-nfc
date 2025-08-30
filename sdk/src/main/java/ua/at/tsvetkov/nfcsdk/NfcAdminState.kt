@@ -45,6 +45,23 @@ sealed class NfcAdminState(val message: String) {
      */
     object NfcUndefined : NfcAdminState("Undefined or indeterminate state of the NFC adapter.")
 
+    /**
+     * Represents the state where an NFC tag has been discovered and its
+     * supported technologies have been identified.
+     *
+     * This state is typically triggered when [android.nfc.NfcAdapter.ReaderCallback.onTagDiscovered]
+     * is called, providing information about the tag's capabilities.
+     * The associated [message] in the parent class will contain a comma-separated
+     * list of these discovered technologies.
+     *
+     * @param tech A list of strings, where each string is a fully qualified
+     * class name of a discovered NFC technology (e.g., "[android.nfc.tech.NfcA]", "[android.nfc.tech.Ndef]").
+     */
+    class NfcTechDiscovered(val tech: List<String>) :
+        NfcAdminState(
+            "NFC tech discovered: ${tech.joinToString(", ")}"
+        )
+
     fun getName() = this::class.simpleName
 
     /**

@@ -18,11 +18,11 @@ detekt {
 }
 
 android {
-    namespace = "ua.at.tsvetkov.nfcsdk"
+    namespace = "ua.at.tsvetkov.nfcsdk.demo"
     compileSdk = 36
 
     defaultConfig {
-        applicationId = "ua.at.tsvetkov.nfcsdk"
+        applicationId = "ua.at.tsvetkov.nfcsdk.demo"
         minSdk = 26
         targetSdk = 36
         versionCode = 1

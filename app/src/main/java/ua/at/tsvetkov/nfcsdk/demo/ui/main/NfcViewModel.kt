@@ -1,4 +1,4 @@
-package ua.at.tsvetkov.nfcsdk.ui.main
+package ua.at.tsvetkov.nfcsdk.demo.ui.main
 
 import android.net.Uri
 import androidx.core.net.toUri
@@ -6,10 +6,9 @@ import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import ua.at.tsvetkov.nfcsdk.NfcAdminError
 import ua.at.tsvetkov.nfcsdk.NfcAdminState
-import ua.at.tsvetkov.nfcsdk.NfcMessage
-import ua.at.tsvetkov.nfcsdk.NfcReadListener
+import ua.at.tsvetkov.nfcsdk.NfcError
+import ua.at.tsvetkov.nfcsdk.NfcListener
 import ua.at.tsvetkov.nfcsdk.NfcStateListener
-import ua.at.tsvetkov.nfcsdk.NfcWriteListener
 import ua.at.tsvetkov.nfcsdk.handler.NfcNdefHandler.Companion.isPossibleEmptyTag
 import ua.at.tsvetkov.nfcsdk.handler.NfcNdefTextHandler
 import ua.at.tsvetkov.nfcsdk.handler.NfcNdefUriHandler
@@ -25,7 +24,7 @@ class NfcViewModel : ViewModel() {
 
     val nfcEnabled = MutableLiveData("NFC Enabled: Checking...")
 
-    val nfcTeach = MutableLiveData("NFC Teach: Checking...")
+    val nfcTeach = MutableLiveData("NFC Teach: Not discovered yet.")
 
     val nfcReadStatus = MutableLiveData("No results yet.")
 
@@ -41,6 +40,7 @@ class NfcViewModel : ViewModel() {
         override fun onNfcStateChanged(state: NfcAdminState) {
             if (state == NfcAdminState.NfcNotAvailable) {
                 nfcSupported.postValue("NFC Supported: NO")
+                nfcEnabled.postValue("NFC Enabled: NO")
             } else {
                 nfcSupported.postValue("NFC Supported: YES")
             }
@@ -49,6 +49,7 @@ class NfcViewModel : ViewModel() {
                 NfcAdminState.NfcOn -> nfcEnabled.postValue("NFC Enabled: YES")
                 NfcAdminState.NfcTurningOff -> nfcEnabled.postValue("NFC Enabled: turning off...")
                 NfcAdminState.NfcTurningOn -> nfcEnabled.postValue("NFC Enabled: turning on...")
+                is NfcAdminState.NfcTechDiscovered -> fillTech(state.tech)
                 else -> Unit
             }
             Log.i("NFC State: ${state.getName()}. $state")
@@ -60,81 +61,74 @@ class NfcViewModel : ViewModel() {
     }
 
     val uriHandler = NfcNdefUriHandler(
-        nfcReadListener = object : NfcReadListener<Uri> {
+        nfcListener = object : NfcListener<Uri> {
             override fun onRead(result: List<Uri>) {
                 createResultsList(result.map { it.toString() })
-                fillTeach()
             }
 
-            override fun onReadEvent(message: NfcMessage, throwable: Throwable?) {
-                checkEmptyTag(message)
-                fillTeach()
-                Log.w("NFC NDEF: ${message.name} ($message)")
-            }
-        },
-        nfcWriteListener = object : NfcWriteListener {
-            override fun onWritten() {
+            override fun onWriteSuccess() {
                 nfcWriteStatus.postValue("Write success")
                 nfcTextToWrite.postValue("")
             }
 
-            override fun onWriteEvent(message: NfcMessage, throwable: Throwable?) {
-                nfcWriteStatus.postValue(message.message)
+            override fun onError(message: NfcError, throwable: Throwable?) {
+                if (message.isReadError()) {
+                    checkEmptyTag(message)
+                } else {
+                    nfcWriteStatus.postValue(message.errorMsg)
+                }
                 Log.w("NFC NDEF: ${message.name} ($message)")
             }
         }
     )
 
     val textHandler = NfcNdefTextHandler(
-        nfcReadListener = object : NfcReadListener<String> {
+        nfcListener = object : NfcListener<String> {
             override fun onRead(result: List<String>) {
                 createResultsList(result)
             }
 
-            override fun onReadEvent(message: NfcMessage, throwable: Throwable?) {
-                checkEmptyTag(message)
-                Log.w("NFC NDEF: ${message.name} ($message)")
-            }
-        },
-        nfcWriteListener = object : NfcWriteListener {
-            override fun onWritten() {
+            override fun onWriteSuccess() {
                 nfcWriteStatus.postValue("Write success")
                 nfcTextToWrite.postValue("")
             }
 
-            override fun onWriteEvent(message: NfcMessage, throwable: Throwable?) {
-                nfcWriteStatus.postValue(message.message)
+            override fun onError(message: NfcError, throwable: Throwable?) {
+                if (message.isReadError()) {
+                    checkEmptyTag(message)
+                } else {
+                    nfcWriteStatus.postValue(message.errorMsg)
+                }
                 Log.w("NFC NDEF: ${message.name} ($message)")
             }
         }
     )
 
-    private fun fillTeach() {
-        val teach = textHandler
-            .getCurrentTechs()
+    private fun fillTech(tech: List<String>) {
+        val shortTeach = tech
             .joinToString(separator = ", ") {
                 it.removePrefix("android.nfc.tech.")
             }
-        nfcTeach.postValue("Teach: $teach")
+        nfcTeach.postValue("Teach: $shortTeach")
     }
 
 //    val nfcMifareUltralightHandler = NfcMifareUltralightTextHandler(
-//        nfcReadListener = object : NfcReadListener<String> {
+//        nfcListener = object : NfcListener<String> {
 //            override fun onNfcTagScanned(result: List<String>) {
 //                createResultsList(result)
 //            }
 //
-//            override fun onNfcScanEvent(message: NfcMessage, throwable: Throwable?) {
+//            override fun onNfcScanEvent(message: NfcError, throwable: Throwable?) {
 //                checkEmptyTag(message)
 //                Log.w("NFC: ${message.name} (${message.message})")
 //            }
 //        },
-//        nfcWriteListener = object : NfcWriteListener {
+//        nfcListener = object : NfcWriteListener {
 //            override fun onNfcWriteSuccess() {
 //                nfcWriteStatus.postValue("Write success")
 //            }
 //
-//            override fun onNfcWriteEvent(message: NfcMessage, throwable: Throwable?) {
+//            override fun onNfcWriteEvent(message: NfcError, throwable: Throwable?) {
 //                nfcWriteStatus.postValue(message.message)
 //                if (throwable != null) {
 //                    Log.w("NFC: ${message.name} (${message.message})", throwable)
@@ -187,13 +181,13 @@ class NfcViewModel : ViewModel() {
         nfcReadStatus.postValue("No results yet.")
     }
 
-    private fun checkEmptyTag(message: NfcMessage) {
+    private fun checkEmptyTag(message: NfcError) {
         if (isPossibleEmptyTag(message)) {
             if (nfcReadStatus.value != EMPTY_TAG_MESSAGE) {
                 nfcReadStatus.postValue(EMPTY_TAG_MESSAGE)
             }
         } else {
-            nfcReadStatus.postValue(message.message)
+            nfcReadStatus.postValue(message.errorMsg)
         }
     }
 

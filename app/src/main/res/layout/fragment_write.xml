@@ -7,13 +7,13 @@
 
         <variable
             name="viewModel"
-            type="ua.at.tsvetkov.nfcsdk.ui.main.NfcViewModel" />
+            type="ua.at.tsvetkov.nfcsdk.demo.ui.main.NfcViewModel" />
     </data>
 
     <androidx.constraintlayout.widget.ConstraintLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        tools:context=".ui.write.WriteFragment">
+        tools:context=".demo.ui.write.WriteFragment">
 
         <Button
             android:id="@+id/btn_clear_tag"

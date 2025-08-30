@@ -1,4 +1,4 @@
-package ua.at.tsvetkov.nfcsdk.ui.write
+package ua.at.tsvetkov.nfcsdk.demo.ui.write
 
 import android.os.Bundle
 import android.view.LayoutInflater
@@ -6,8 +6,8 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
-import ua.at.tsvetkov.nfcsdk.databinding.FragmentWriteBinding
-import ua.at.tsvetkov.nfcsdk.ui.main.NfcViewModel
+import ua.at.tsvetkov.nfcsdk.demo.databinding.FragmentWriteBinding
+import ua.at.tsvetkov.nfcsdk.demo.ui.main.NfcViewModel
 
 class WriteFragment : Fragment() {
 

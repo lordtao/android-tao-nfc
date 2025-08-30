@@ -1,4 +1,4 @@
-package ua.at.tsvetkov.nfcsdk.ui.main
+package ua.at.tsvetkov.nfcsdk.demo.ui.main
 
 import android.os.Bundle
 import androidx.activity.viewModels
@@ -9,8 +9,8 @@ import androidx.navigation.ui.setupActionBarWithNavController
 import androidx.navigation.ui.setupWithNavController
 import com.google.android.material.bottomnavigation.BottomNavigationView
 import ua.at.tsvetkov.nfcsdk.NfcAdmin
-import ua.at.tsvetkov.nfcsdk.R
-import ua.at.tsvetkov.nfcsdk.databinding.ActivityMainBinding
+import ua.at.tsvetkov.nfcsdk.demo.R
+import ua.at.tsvetkov.nfcsdk.demo.databinding.ActivityMainBinding
 
 class MainActivity : AppCompatActivity() {
 
@@ -66,7 +66,7 @@ class MainActivity : AppCompatActivity() {
     override fun onResume() {
         super.onResume()
         nfcAdmin.registerNfcStateReceiver()
-        nfcAdmin.enableReaderModeWithDefaults()
+        nfcAdmin.enableReaderMode()
     }
 
     override fun onPause() {

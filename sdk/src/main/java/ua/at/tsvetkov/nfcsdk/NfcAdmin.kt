@@ -11,6 +11,7 @@ import android.content.IntentFilter
 import android.nfc.NfcAdapter
 import android.nfc.Tag
 import android.os.Bundle
+import ua.at.tsvetkov.nfcsdk.NfcAdmin.Companion.DEFAULT_READER_FLAGS
 import ua.at.tsvetkov.nfcsdk.handler.NfcHandler
 import ua.at.tsvetkov.util.logger.Log
 
@@ -37,7 +38,7 @@ class NfcAdmin(
 
     private val handlers: MutableList<NfcHandler<*, *>> = mutableListOf()
 
-    private var currentTechs: List<String> = listOf()
+    private var scannedTechs: List<String> = listOf()
 
     private val nfcStateReceiver =
         object : BroadcastReceiver() {
@@ -66,19 +67,7 @@ class NfcAdmin(
      *
      * @return [List] of technology class names, or an empty list if none are set.
      */
-    fun getCurrentTechs(): List<String> = currentTechs
-
-    /**
-     * Sets the list of NFC technologies for the currently processed tag.
-     *
-     * Typically called after discovering a tag and getting its technologies
-     * via [android.nfc.Tag.getTechList].
-     *
-     * @param currentTechs A [List] of fully qualified NFC technology class names.
-     */
-    fun setCurrentTechs(currentTechs: List<String>) {
-        this.currentTechs = currentTechs
-    }
+    fun getScannedTechs(): List<String> = scannedTechs
 
     /**
      * Checks if the device has NFC hardware.
@@ -134,63 +123,39 @@ class NfcAdmin(
     }
 
     /**
-     * Enables NFC reader mode with a predefined set of commonly used flags.
+     * Enables NFC reader mode for the current [Activity].
      *
-     * This method simplifies the process of enabling reader mode by defaulting to a
-     * comprehensive set of NFC technologies and options. The default flags include:
-     * - [NfcAdapter.FLAG_READER_NFC_A]
-     * - [NfcAdapter.FLAG_READER_NFC_B]
-     * - [NfcAdapter.FLAG_READER_NFC_F]
-     * - [NfcAdapter.FLAG_READER_NFC_V]
-     * - [NfcAdapter.FLAG_READER_NFC_BARCODE]
-     * - [NfcAdapter.FLAG_READER_SKIP_NDEF_CHECK]
+     * When reader mode is enabled, this instance (acting as [NfcAdapter.ReaderCallback])
+     * receives NFC tag discovery events via its [onTagDiscovered] method.
+     * This mode grants the foreground Activity priority in handling NFC tags and generally
+     * prevents other apps from interfering with tag discovery.
      *
-     * Reader mode gives the calling Activity priority in handling discovered NFC tags.
-     * It is typically called in the `onResume()` lifecycle method of an Activity and
-     * paired with a call to [disableReaderMode] in `onPause()`.
+     * It is recommended to call this method in the `onResume()` lifecycle callback of
+     * the [Activity] and [disableReaderMode] in `onPause()`.
      *
-     * This method internally calls [enableReaderMode] with the configured flags.
-     *
-     * @param isOnSound If `false` (default), [NfcAdapter.FLAG_READER_NO_PLATFORM_SOUNDS]
-     *                  will be added to the flags, muting the default NFC discovery sound.
-     *                  If `true`, the platform's default NFC sound will play upon tag discovery.
-     * @param extras An optional [Bundle] of extra data to be passed to the underlying
-     *               [NfcAdapter.enableReaderMode] call. This can be used to specify
-     *               additional parameters for the NFC polling loop, such as a delay.
-     *               Defaults to `null`.
-     * @see enableReaderMode
-     * @see NfcAdapter.enableReaderMode
-     */
-    fun enableReaderModeWithDefaults(isOnSound: Boolean = false, extras: Bundle? = null) {
-        val baseFlags =
-            NfcAdapter.FLAG_READER_NFC_A or
-                NfcAdapter.FLAG_READER_NFC_B or
-                NfcAdapter.FLAG_READER_NFC_F or
-                NfcAdapter.FLAG_READER_NFC_V or
-                NfcAdapter.FLAG_READER_NFC_BARCODE
-
-        val readerFlags: Int =
-            baseFlags or if (!isOnSound) NfcAdapter.FLAG_READER_NO_PLATFORM_SOUNDS else 0
-        enableReaderMode(readerFlags, extras)
-    }
-
-    /**
-     * Enables NFC reader mode for the current Activity.
-     *
-     * When reader mode is enabled, the specified Activity will receive NFC tag discovery events
-     * through the [NfcAdapter.ReaderCallback] interface (which this class implements).
-     * This mode gives the foreground Activity priority in handling NFC tags, and generally
-     * prevents other apps from interfering.
-     *
-     * This method should typically be called in the `onResume` lifecycle method of an Activity.
+     * If the NFC adapter is not available or not enabled on the device, reader mode
+     * will not be activated, and the [nfcStateListener] will be notified accordingly
+     * (e.g., [NfcAdminState.NfcNotAvailable] or [NfcAdminState.NfcOff]).
      *
      * @param flags A bitmask of flags indicating the NFC technologies to poll for.
-     *              For example, [NfcAdapter.FLAG_READER_NFC_A], [NfcAdapter.FLAG_READER_NFC_B].
-     * @param extras An optional [Bundle] of extra data. Can be `null`.
-     *               This can be used to pass specific polling loop parameters, such as delay.
+     * For example, [NfcAdapter.FLAG_READER_NFC_A], [NfcAdapter.FLAG_READER_NFC_B].
+     * These can be combined using the bitwise OR operator.
+     * Defaults to [DEFAULT_READER_FLAGS] if not specified.
+     * @param isOnSound If `true`, the platform's default NFC discovery sound will play.
+     * If `false` (default), [NfcAdapter.FLAG_READER_NO_PLATFORM_SOUNDS]
+     * is added to the `flags`, muting the default sound.
+     * @param extras An optional [Bundle] for extra parameters. Can be `null`.
+     * This can be used to pass specific polling loop parameters,
+     * such as [NfcAdapter.EXTRA_READER_PRESENCE_CHECK_DELAY].
+     *
      * @see NfcAdapter.enableReaderMode
+     * @see disableReaderMode
+     * @see onTagDiscovered
+     * @see DEFAULT_READER_FLAGS
      */
-    fun enableReaderMode(flags: Int, extras: Bundle? = null) {
+    fun enableReaderMode(flags: Int = DEFAULT_READER_FLAGS, isOnSound: Boolean = false, extras: Bundle? = null) {
+        val readerFlags: Int = flags or if (!isOnSound) NfcAdapter.FLAG_READER_NO_PLATFORM_SOUNDS else 0
+
         if (nfcAdapter == null) {
             if (isAdminLogEnabled) {
                 Log.w("NFC Adapter is not available on this device. Reader mode not enabled.")
@@ -206,7 +171,7 @@ class NfcAdmin(
             return
         }
         try {
-            nfcAdapter?.enableReaderMode(activity, this, flags, extras)
+            nfcAdapter?.enableReaderMode(activity, this, readerFlags, extras)
             nfcStateListener?.onNfcStateChanged(NfcAdminState.NfcOn)
             if (isAdminLogEnabled) {
                 Log.i("NFC Adapter is enabled. Reader mode enabled.")
@@ -259,19 +224,37 @@ class NfcAdmin(
         }
 
         if (isAdminLogEnabled) Log.d("Tag discovered: $tag")
-        currentTechs = tag.techList.asList()
+        scannedTechs = tag.techList.asList()
+        nfcStateListener?.onNfcStateChanged(NfcAdminState.NfcTechDiscovered(scannedTechs))
 
         activity.runOnUiThread {
             handlers
                 .forEach { handler ->
-                    handler.setCurrentTechs(currentTechs)
-                    handler.onScanEvent(NfcMessage.START_HANDLING)
-                    if (handler.isHavePreparedDataToWrite()) {
-                        handler.writeDataToTag(tag)
-                    } else {
-                        handler.readDataFromTag(tag)
+                    if (handler.isSupportTech(scannedTechs)) {
+                        if (handler.isHavePreparedDataToWrite()) {
+                            handler.writeDataToTag(tag)
+                        } else {
+                            handler.readDataFromTag(tag)
+                        }
                     }
                 }
         }
+    }
+
+    companion object {
+        /**
+         * The default flags include:
+         * - [NfcAdapter.FLAG_READER_NFC_A]
+         * - [NfcAdapter.FLAG_READER_NFC_B]
+         * - [NfcAdapter.FLAG_READER_NFC_F]
+         * - [NfcAdapter.FLAG_READER_NFC_V]
+         * - [NfcAdapter.FLAG_READER_NFC_BARCODE]
+         * - [NfcAdapter.FLAG_READER_SKIP_NDEF_CHECK]
+         */
+        const val DEFAULT_READER_FLAGS = NfcAdapter.FLAG_READER_NFC_A or
+            NfcAdapter.FLAG_READER_NFC_B or
+            NfcAdapter.FLAG_READER_NFC_F or
+            NfcAdapter.FLAG_READER_NFC_V or
+            NfcAdapter.FLAG_READER_NFC_BARCODE
     }
 }

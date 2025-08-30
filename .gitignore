@@ -16,5 +16,9 @@
 local.properties
 
 .idea/markdown-exported-files.xml
+.idea/deploymentTargetSelector.xml
 .idea/misc.xml
 .idea/
+
+/aar
+/aar/*.*

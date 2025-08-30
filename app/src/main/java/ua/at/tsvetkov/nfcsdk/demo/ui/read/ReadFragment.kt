@@ -1,4 +1,4 @@
-package ua.at.tsvetkov.nfcsdk.ui.read
+package ua.at.tsvetkov.nfcsdk.demo.ui.read
 
 import android.os.Bundle
 import android.view.LayoutInflater
@@ -6,8 +6,8 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
-import ua.at.tsvetkov.nfcsdk.databinding.FragmentReadBinding
-import ua.at.tsvetkov.nfcsdk.ui.main.NfcViewModel
+import ua.at.tsvetkov.nfcsdk.demo.databinding.FragmentReadBinding
+import ua.at.tsvetkov.nfcsdk.demo.ui.main.NfcViewModel
 
 class ReadFragment : Fragment() {
 

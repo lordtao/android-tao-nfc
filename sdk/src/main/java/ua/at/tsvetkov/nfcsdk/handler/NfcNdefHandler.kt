@@ -10,9 +10,8 @@ import android.nfc.Tag
 import android.nfc.tech.Ndef
 import android.nfc.tech.NdefFormatable
 import java.io.IOException
-import ua.at.tsvetkov.nfcsdk.NfcMessage
-import ua.at.tsvetkov.nfcsdk.NfcReadListener
-import ua.at.tsvetkov.nfcsdk.NfcWriteListener
+import ua.at.tsvetkov.nfcsdk.NfcError
+import ua.at.tsvetkov.nfcsdk.NfcListener
 import ua.at.tsvetkov.nfcsdk.parser.NfcDataParser
 import ua.at.tsvetkov.nfcsdk.preparer.NfcDataPreparer
 
@@ -28,38 +27,36 @@ import ua.at.tsvetkov.nfcsdk.preparer.NfcDataPreparer
  * into a higher-level, application-specific data type [R]. Conversely, it uses an
  * [NfcDataPreparer] to convert data of type [R] back into an [NdefMessage] for writing.
  *
- * Error handling and success notifications are delegated to the provided [NfcReadListener]
- * and [NfcWriteListener].
+ * Error handling and success notifications are delegated to the provided [NfcListener]
  *
  * @param R The high-level, structured data type that the application consumes or produces.
  *          This is the type that the [reader] produces and the [preparer] consumes.
- *          Scan results are delivered as this type via [NfcReadListener].
+ *          Scan results are delivered as this type via [NfcListener].
  * @param parser The [NfcDataParser] responsible for parsing [NdefMessage] objects
  * read from the tag into the application-specific data type [R].
  * @param preparer The [NfcDataPreparer] responsible for preparing application-specific
  * data of type [R] into an [NdefMessage] for writing to the tag.
- * @param nfcReadListener An optional [NfcReadListener] to receive callbacks for NDEF scan
- * events, delivering parsed data of type [R] or scan errors.
- * @param nfcWriteListener An optional [NfcWriteListener] to receive callbacks for NDEF write
- * events, indicating success or failure.
+ * @param nfcListener  [NfcListener] to receive callbacks for NDEF read
+ * and write errors, delivering parsed data of type [R] or scan errors.
  */
 abstract class NfcNdefHandler<R>(
     parser: NfcDataParser<NdefMessage, R>,
     preparer: NfcDataPreparer<R, NdefMessage>,
-    nfcReadListener: NfcReadListener<R>? = null,
-    nfcWriteListener: NfcWriteListener? = null
-) : NfcHandler<NdefMessage, R>(parser, preparer, nfcReadListener, nfcWriteListener) {
+    nfcListener: NfcListener<R>
+) : NfcHandler<NdefMessage, R>(parser, preparer, nfcListener) {
+
+    override val supportedTechs = listOf(Ndef::class.java.name, NdefFormatable::class.java.name)
 
     @Suppress("ReturnCount")
     override fun readDataFromTag(tag: Tag) {
         val ndef = Ndef.get(tag)
         val ndefFormatable = NdefFormatable.get(tag)
         if (ndef == null && ndefFormatable == null) {
-            onScanEvent(NfcMessage.TAG_NOT_NDEF_COMPLIANT)
+            onError(NfcError.READ_TAG_NOT_NDEF_COMPLIANT)
             return
         }
         if (ndef == null) {
-            onScanEvent(NfcMessage.TAG_NOT_NDEF_FORMATTED)
+            onError(NfcError.READ_TAG_NOT_NDEF_FORMATTED)
             return
         }
 
@@ -68,27 +65,27 @@ abstract class NfcNdefHandler<R>(
             val ndefMessage: NdefMessage? = ndef.cachedNdefMessage ?: ndef.ndefMessage
 
             if (ndefMessage == null) {
-                onScanEvent(NfcMessage.NDEF_MESSAGE_NULL)
+                onError(NfcError.READ_NDEF_MESSAGE_NULL)
                 return
             }
 
             if (isNdefEmpty(ndefMessage)) {
-                onScanEvent(NfcMessage.NDEF_MESSAGE_EMPTY)
+                onError(NfcError.READ_NDEF_MESSAGE_EMPTY)
                 return
             }
 
             val result = parser.parse(ndefMessage)
 
-            nfcReadListener?.onRead(result)
+            nfcListener.onRead(result)
         } catch (e: IOException) {
-            onScanEvent(NfcMessage.IO_EXCEPTION_WHILE_READING, e)
+            onError(NfcError.READ_IO_EXCEPTION, e)
         } catch (e: Exception) {
-            onScanEvent(NfcMessage.READ_GENERAL_ERROR, e)
+            onError(NfcError.READ_GENERAL_ERROR, e)
         } finally {
             try {
                 ndef.close()
             } catch (e: IOException) {
-                onScanEvent(NfcMessage.CLOSE_CONNECTION_ERROR, e)
+                onError(NfcError.READ_CLOSE_CONNECTION_ERROR, e)
             }
         }
     }
@@ -118,46 +115,46 @@ abstract class NfcNdefHandler<R>(
                 if (ndef != null) {
                     ndef.connect()
                     if (!ndef.isWritable) {
-                        nfcWriteListener?.onWriteEvent(NfcMessage.TAG_NOT_WRITABLE)
+                        nfcListener.onError(NfcError.WRITE_TAG_NOT_WRITABLE)
                         // No need to close if not writable
                         // (it wasn't opened for write or is already closed by isWritable check)
                         return
                     }
                     if (ndef.maxSize < message.toByteArray().size) {
-                        nfcWriteListener?.onWriteEvent(NfcMessage.NOT_ENOUGH_SPACE)
+                        nfcListener.onError(NfcError.WRITE_NOT_ENOUGH_SPACE)
                         return // Connection will be closed in finally
                     }
                     ndef.writeNdefMessage(message)
-                    nfcWriteListener?.onWritten()
+                    nfcListener.onWriteSuccess()
                 } else {
                     ndefFormatable = NdefFormatable.get(tag)
                     if (ndefFormatable != null) {
                         ndefFormatable.connect()
                         ndefFormatable.format(message)
-                        nfcWriteListener?.onWritten()
+                        nfcListener.onWriteSuccess()
                     } else {
-                        onWriteEvent(NfcMessage.TAG_NOT_NDEF_COMPLIANT)
+                        onError(NfcError.WRITE_TAG_NOT_NDEF_COMPLIANT)
                     }
                 }
             } catch (e: IOException) {
-                onWriteEvent(NfcMessage.IO_EXCEPTION_WHILE_WRITING, e)
+                onError(NfcError.WRITE_IO_EXCEPTION, e)
             } catch (e: Exception) {
-                onWriteEvent(NfcMessage.WRITE_GENERAL_ERROR, e)
+                onError(NfcError.WRITE_GENERAL_ERROR, e)
             } finally {
                 try {
                     ndef?.close()
                 } catch (e: IOException) {
-                    onWriteEvent(NfcMessage.CLOSE_CONNECTION_ERROR, e)
+                    onError(NfcError.WRITE_CLOSE_CONNECTION_ERROR, e)
                 }
                 try {
                     ndefFormatable?.close()
                 } catch (e: IOException) {
-                    onWriteEvent(NfcMessage.CLOSE_CONNECTION_ERROR, e)
+                    onError(NfcError.WRITE_CLOSE_CONNECTION_ERROR, e)
                 }
             }
             preparedData = null
         } ?: run {
-            onWriteEvent(NfcMessage.NO_DATA_TO_WRITE)
+            onError(NfcError.WRITE_NO_DATA_TO_WRITE)
         }
     }
 
@@ -173,8 +170,8 @@ abstract class NfcNdefHandler<R>(
 
     companion object {
 
-        fun isPossibleEmptyTag(nfcMessage: NfcMessage) = nfcMessage == NfcMessage.TAG_NOT_NDEF_FORMATTED ||
-            nfcMessage == NfcMessage.NDEF_MESSAGE_NULL ||
-            nfcMessage == NfcMessage.NDEF_MESSAGE_EMPTY
+        fun isPossibleEmptyTag(nfcError: NfcError) = nfcError == NfcError.READ_TAG_NOT_NDEF_FORMATTED ||
+            nfcError == NfcError.READ_NDEF_MESSAGE_NULL ||
+            nfcError == NfcError.READ_NDEF_MESSAGE_EMPTY
     }
 }

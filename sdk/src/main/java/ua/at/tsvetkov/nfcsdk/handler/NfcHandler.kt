@@ -1,9 +1,8 @@
 package ua.at.tsvetkov.nfcsdk.handler
 
 import android.nfc.Tag
-import ua.at.tsvetkov.nfcsdk.NfcMessage
-import ua.at.tsvetkov.nfcsdk.NfcReadListener
-import ua.at.tsvetkov.nfcsdk.NfcWriteListener
+import ua.at.tsvetkov.nfcsdk.NfcError
+import ua.at.tsvetkov.nfcsdk.NfcListener
 import ua.at.tsvetkov.nfcsdk.parser.NfcDataParser
 import ua.at.tsvetkov.nfcsdk.preparer.NfcDataPreparer
 
@@ -22,22 +21,18 @@ import ua.at.tsvetkov.nfcsdk.preparer.NfcDataPreparer
  * @param R The high-level, structured data type that the application consumes or produces
  *          (e.g., `String` for text content, `android.net.Uri` for URIs, or a custom data model).
  *          This is the type that [reader] produces (as a list) and [preparer] consumes (as a list).
- *          Scan results are delivered as this type via [NfcReadListener].
+ *          Scan results are delivered as this type via [NfcListener].
  *
  * @property parser The [NfcDataParser] responsible for parsing raw data
  * of type [D] from the tag into a list of structured data of type [R].
  * @property preparer The [NfcDataPreparer] responsible for preparing a
  * list of structured data of type [R] into the raw data format [D] for writing to the tag.
- * @property nfcReadListener An optional [NfcReadListener] to receive callbacks for NFC scan events,
- * including successfully scanned data or errors.
- * @property nfcWriteListener An optional [NfcWriteListener] to receive callbacks for NFC write events,
- * indicating success or failure.
+ * @property nfcListener A [NfcListener] to receive callbacks for NFC read/write errors.
  */
 abstract class NfcHandler<D, R>(
     var parser: NfcDataParser<D, R>,
     var preparer: NfcDataPreparer<R, D>,
-    var nfcReadListener: NfcReadListener<R>? = null,
-    var nfcWriteListener: NfcWriteListener? = null
+    var nfcListener: NfcListener<R>
 ) {
     /**
      * Stores the data (in its low-level format [D]) that has been prepared by
@@ -47,33 +42,41 @@ abstract class NfcHandler<D, R>(
      */
     protected var preparedData: D? = null
 
-    private var currentTechs: List<String> = listOf()
-
     /**
      * Prepares the data required to "clears" or "erases" existing content on a tag.
      */
     abstract fun prepareCleaningData()
 
     /**
-     * Gets the list of NFC technologies from the last processed tag.
+     * A list of NFC technology class names that this specific handler implementation
+     * is designed to work with.
      *
-     * Each string is a fully qualified class name (e.g., "android.nfc.tech.NfcA").
+     * For example, a handler for NDEF data might declare
+     * `listOf("[android.nfc.tech.Ndef]", "[android.nfc.tech.NdefFormatable]")`.
+     * This list is used by [isSupportTech] to determine if this handler can process
+     * a discovered NFC tag based on the technologies available on that tag.
      *
-     * @return [List] of technology class names, or an empty list if none are set.
+     * Concrete implementations of [NfcHandler] must override this property to
+     * specify which technologies they support.
      */
-    fun getCurrentTechs(): List<String> = currentTechs
+    abstract val supportedTechs: List<String>
 
     /**
-     * Sets the list of NFC technologies for the currently processed tag.
+     * Checks if this handler supports at least one of the NFC technologies
+     * present on a discovered tag.
      *
-     * Typically called after discovering a tag and getting its technologies
-     * via [android.nfc.Tag.getTechList].
+     * It compares the technologies provided in the [tech] parameter (typically
+     * obtained from `tag.getTechList()`) against the handler's own
+     * [supportedTechs] list.
      *
-     * @param currentTechs A [List] of fully qualified NFC technology class names.
+     * @param tech A list of strings, where each string is a fully qualified
+     * class name of an NFC technology discovered on a tag
+     * (e.g., "[android.nfc.tech.NfcA]", "[android.nfc.tech.Ndef]").
+     * @return `true` if there is at least one common technology between
+     * the [tech] parameter and this handler's [supportedTechs],
+     * `false` otherwise.
      */
-    fun setCurrentTechs(currentTechs: List<String>) {
-        this.currentTechs = currentTechs
-    }
+    fun isSupportTech(tech: List<String>): Boolean = supportedTechs.any { it in tech }
 
     /**
      * Resets the data previously staged for an NFC tag write operation.
@@ -105,23 +108,13 @@ abstract class NfcHandler<D, R>(
     fun isHavePreparedDataToWrite(): Boolean = preparedData != null
 
     /**
-     * Propagates a scan event/error to the [nfcReadListener], if one is set.
+     * Propagates a error to the [nfcListener], if one is set.
      *
-     * @param message The [NfcMessage] that occurred during scanning.
+     * @param message The [NfcError] that occurred during scanning/writing.
      * @param throwable An optional [Throwable] that caused or is related to the error.
      */
-    fun onScanEvent(message: NfcMessage, throwable: Throwable? = null) {
-        nfcReadListener?.onReadEvent(message, throwable)
-    }
-
-    /**
-     * Propagates a write event/error to the [nfcWriteListener], if one is set.
-     *
-     * @param message The [NfcMessage] that occurred during writing.
-     * @param throwable An optional [Throwable] that caused or is related to the error.
-     */
-    fun onWriteEvent(message: NfcMessage, throwable: Throwable? = null) {
-        nfcWriteListener?.onWriteEvent(message, throwable)
+    fun onError(message: NfcError, throwable: Throwable? = null) {
+        nfcListener.onError(message, throwable)
     }
 
     /**
@@ -129,7 +122,7 @@ abstract class NfcHandler<D, R>(
      *
      * Concrete implementations should handle the specifics of interacting with the tag's
      * technology, retrieve raw data, use the [parser] to parse it into structured data of type [R],
-     * and then typically communicate the results (or errors) via the [nfcReadListener].
+     * and then typically communicate the results (or errors) via the [nfcListener].
      *
      * @param tag The NFC [Tag] object discovered and to be read from.
      */
@@ -140,7 +133,7 @@ abstract class NfcHandler<D, R>(
      *
      * Concrete implementations should take the data stored in [preparedData] (which should have
      * been populated by [prepareToWrite]) and write it to the tag using the appropriate
-     * NFC technology. Results or errors should be communicated via the [nfcWriteListener].
+     * NFC technology. Results or errors should be communicated via the [nfcListener].
      *
      * @param tag The NFC [Tag] object to write data to.
      */

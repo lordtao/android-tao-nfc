@@ -1,4 +1,4 @@
-package ua.at.tsvetkov.nfcsdk
+package ua.at.tsvetkov.nfcsdk.demo
 
 import android.app.Application
 import ua.at.tsvetkov.util.logger.Log

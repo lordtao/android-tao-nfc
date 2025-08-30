@@ -8,31 +8,48 @@ import android.nfc.Tag
 import android.nfc.tech.MifareUltralight
 import java.io.IOException
 import kotlin.math.ceil
-import ua.at.tsvetkov.nfcsdk.NfcMessage
-import ua.at.tsvetkov.nfcsdk.NfcReadListener
-import ua.at.tsvetkov.nfcsdk.NfcWriteListener
+import ua.at.tsvetkov.nfcsdk.NfcError
+import ua.at.tsvetkov.nfcsdk.NfcListener
 import ua.at.tsvetkov.nfcsdk.parser.MifareUltralightStringParser
 import ua.at.tsvetkov.nfcsdk.preparer.MifareUltralightStringPreparer
 
+/**
+ * An [NfcHandler] implementation specifically designed for reading and writing
+ * text data to MIFARE Ultralight NFC tags.
+ *
+ * It uses [ByteArray] as the intermediate data type (raw tag data) and [String]
+ * as the application-level data type.
+ *
+ * This handler reads a sequence of pages, parses the combined byte array as a string
+ * (typically length-prefixed), and prepares a string for writing by converting it
+ * into a byte array formatted for MIFARE Ultralight pages.
+ *
+ * @param nfcListener The listener for NFC read/write events, expecting [String] data.
+ * @param startDataPage The starting page index on the MIFARE Ultralight tag for data operations.
+ * Defaults to page 4, as earlier pages often contain configuration or lock bits.
+ * @param pagesToAccess The total number of pages to be read or that can be written,
+ * starting from [startDataPage]. This determines the maximum data capacity.
+ * Defaults to 12 pages.
+ */
 class NfcMifareUltralightTextHandler(
-    nfcReadListener: NfcReadListener<String>?, // R = String
-    nfcWriteListener: NfcWriteListener?,
-    private val startDataPage: Int = 4,
-    private val pagesToAccess: Int = 12
+    nfcListener: NfcListener<String>, // R = String
+    private val startDataPage: Int = START_DATA_PAGE,
+    private val pagesToAccess: Int = MAX_PAGES_TO_ACCESS
 ) : NfcHandler<ByteArray, String>( // D = ByteArray, R = String
     MifareUltralightStringParser(pagesToAccess * MifareUltralightStringPreparer.PAGE_SIZE),
     MifareUltralightStringPreparer(startDataPage, pagesToAccess * MifareUltralightStringPreparer.PAGE_SIZE),
-    nfcReadListener,
-    nfcWriteListener
+    nfcListener
 ) {
     companion object {
+        const val START_DATA_PAGE = 4
         const val PAGE_SIZE = 4
+        const val MAX_PAGES_TO_ACCESS = 12
     }
 
     private val totalBytesToAccess = pagesToAccess * PAGE_SIZE
 
     init {
-        if (startDataPage < 4) {
+        if (startDataPage < START_DATA_PAGE) {
             System.err.println(
                 "Warning: startDataPage ($startDataPage) is less than 4. " +
                     "Writing to early pages can be risky."
@@ -46,6 +63,8 @@ class NfcMifareUltralightTextHandler(
         }
     }
 
+    override val supportedTechs: List<String> = listOf(MifareUltralight::class.java.name)
+
     override fun prepareCleaningData() {
         preparedData = byteArrayOf(0x00.toByte())
     }
@@ -53,7 +72,7 @@ class NfcMifareUltralightTextHandler(
     override fun readDataFromTag(tag: Tag) {
         val ultralight = MifareUltralight.get(tag)
         if (ultralight == null) {
-            onScanEvent(NfcMessage.TAG_NOT_MIFARE_ULTRALIGHT)
+            onError(NfcError.READ_TAG_NOT_MIFARE_ULTRALIGHT)
             return
         }
 
@@ -61,11 +80,11 @@ class NfcMifareUltralightTextHandler(
 
         try {
             ultralight.connect()
-            for (i in 0 until pagesToAccess step 4) {
+            for (i in 0 until pagesToAccess step START_DATA_PAGE) {
                 val currentOffset = startDataPage + i
                 if (i < pagesToAccess) {
                     val pagesRead = ultralight.readPages(currentOffset)
-                    val bytesToTakeFromThisBlock = if (i + 4 <= pagesToAccess) {
+                    val bytesToTakeFromThisBlock = if (i + START_DATA_PAGE <= pagesToAccess) {
                         pagesRead.size
                     } else {
                         (pagesToAccess - i) * PAGE_SIZE
@@ -75,18 +94,16 @@ class NfcMifareUltralightTextHandler(
             }
 
             if (rawDataBuffer.isEmpty() && pagesToAccess > 0) {
-                onScanEvent(NfcMessage.TAG_EMPTY_OR_UNREADABLE)
+                onError(NfcError.READ_TAG_EMPTY_OR_UNREADABLE)
                 return
             }
 
             val parsedStringList = parser.parse(rawDataBuffer)
-            nfcReadListener?.onRead(parsedStringList)
+            nfcListener.onRead(parsedStringList)
         } catch (e: IOException) {
-            onScanEvent(NfcMessage.IO_EXCEPTION_WHILE_READING, e)
-        } catch (e: IllegalArgumentException) {
-            onScanEvent(NfcMessage.PARSING_ERROR, e)
+            onError(NfcError.READ_IO_EXCEPTION, e)
         } catch (e: Exception) {
-            onScanEvent(NfcMessage.READ_GENERAL_ERROR, e)
+            onError(NfcError.READ_GENERAL_ERROR, e)
         } finally {
             try {
                 ultralight.close()
@@ -100,13 +117,13 @@ class NfcMifareUltralightTextHandler(
     override fun writeDataToTag(tag: Tag) {
         val dataBytesToWrite = this.preparedData
         if (dataBytesToWrite == null || dataBytesToWrite.isEmpty()) {
-            onWriteEvent(NfcMessage.NO_DATA_TO_WRITE)
+            onError(NfcError.WRITE_NO_DATA_TO_WRITE)
             return
         }
 
         val ultralight = MifareUltralight.get(tag)
         if (ultralight == null) {
-            onWriteEvent(NfcMessage.TAG_NOT_MIFARE_ULTRALIGHT)
+            onError(NfcError.READ_TAG_NOT_MIFARE_ULTRALIGHT)
             return
         }
 
@@ -118,8 +135,8 @@ class NfcMifareUltralightTextHandler(
                 val dataIndexStart = i * PAGE_SIZE
 
                 if (i >= pagesToAccess) {
-                    onWriteEvent(
-                        NfcMessage.NOT_ENOUGH_SPACE,
+                    onError(
+                        NfcError.WRITE_NOT_ENOUGH_SPACE,
                         IllegalStateException(
                             "Data too long for configured pagesToAccess ($pagesToAccess pages)." +
                                 " Need to write to page index $i."
@@ -138,11 +155,11 @@ class NfcMifareUltralightTextHandler(
 
             // Убедимся, что количество записанных "полезных" байт совпадает с размером подготовленных данных
             if (bytesActuallyWrittenCount == dataBytesToWrite.size) {
-                nfcWriteListener?.onWritten()
+                nfcListener.onWriteSuccess()
             } else {
                 // Этого не должно произойти, если логика выше верна
-                onWriteEvent(
-                    NfcMessage.WRITE_VERIFICATION_ERROR,
+                onError(
+                    NfcError.WRITE_VERIFICATION_ERROR,
                     IllegalStateException(
                         "Mismatch in written bytes count. " +
                             "Expected ${dataBytesToWrite.size}, wrote $bytesActuallyWrittenCount"
@@ -150,11 +167,9 @@ class NfcMifareUltralightTextHandler(
                 )
             }
         } catch (e: IOException) {
-            onWriteEvent(NfcMessage.IO_EXCEPTION_WHILE_WRITING, e)
-        } catch (e: IllegalArgumentException) { // От preparer или внутренних проверок
-            onWriteEvent(NfcMessage.PREPARE_DATA_ERROR, e)
+            onError(NfcError.WRITE_IO_EXCEPTION, e)
         } catch (e: Exception) {
-            onWriteEvent(NfcMessage.WRITE_GENERAL_ERROR, e)
+            onError(NfcError.WRITE_GENERAL_ERROR, e)
         } finally {
             try {
                 ultralight.close()

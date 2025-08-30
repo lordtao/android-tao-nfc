@@ -146,7 +146,7 @@ Add intent filters to the Activity that will handle discovered NFC tags. This al
     An abstract class that defines the contract for specific tag technology interactions.
     *   `D`: The raw data type read from or written to the tag (e.g., `NdefMessage`, `ByteArray`).
     *   `R`: The application-level data type that is parsed from `D` or prepared into `D`.
-    *   Constructor: `NfcHandler(parser: NfcDataParser<D, R>, preparer: NfcDataPreparer<R, D>, nfcReadListener: NfcReadListener<R>? = null, nfcWriteListener: NfcWriteListener? = null)`
+    *   Constructor: `NfcHandler(parser: NfcDataParser<D, R>, preparer: NfcDataPreparer<R, D>, nfcListener: NfcListener<R>? = null)`
     *   **`NdefHandler<R>`**: A concrete implementation of `NfcHandler<NdefMessage, R>` specialized for NDEF operations. It uses an `NfcDataParser<NdefMessage, R>` and `NfcDataPreparer<R, NdefMessage>`.
 
 *   **`NfcDataParser<D, R>`**:
@@ -162,14 +162,10 @@ Add intent filters to the Activity that will handle discovered NFC tags. This al
 
 *   **Listeners**:
     *   **`NfcStateListener`**: Receives callbacks when the device's NFC adapter is enabled or disabled.
-        *   `onNfcStateChanged(enabled: Boolean)`
-    *   **`NfcReadListener<R>`**: Receives results from tag reading operations.
-        *   `onNfcTagRead(data: R, tagId: ByteArray)`: Called on successful read and parse. (`tagId` is typically `tag.id`).
-        *   `onNfcReadError(error: NfcError, exception: Exception?)`: Called if an error occurs during reading.
-        *   `onNfcReadWarning(warning: NfcError)`: For non-critical issues during reading.
-    *   **`NfcWriteListener`**: Receives results from tag writing operations.
-        *   `onNfcWriteSuccess()`: Called on successful write.
-        *   `onNfcWriteError(error: NfcError, exception: Exception?)`: Called if an error occurs during writing.
+    *   **`NfcListener<R>`**: Called when an event/error occurs during the NFC tag scanning or processing.
+        *   `onRead(result: List<R>)`: Called on successful read and parse.
+        *   `onWriteSuccess()`: Called when data has been successfully written to the NFC tag.
+        *   `onNfcError(error: NfcError, exception: Exception?)`: Called when an event/error occurs during the NFC tag scanning or processing.
 
 *   **`NfcError`**:
     An enum representing various errors that can occur during NFC operations (e.g., `TAG_NOT_NDEF_FORMATTED`, `IO_EXCEPTION_WHILE_READING`, `TAG_NOT_WRITABLE`).
@@ -197,28 +193,21 @@ private val nfcStateListener = object : NfcStateListener {
 }
 
 // Assuming R (application-level data) is String
-private val nfcReadListener = object : NfcReadListener<String> {
+private val nfcListener = object : NfcListener<String> {
     override fun onRead(result: List<String>) {
         // Handle successfully read and parsed data
         Log.d("NFC_SDK_App", "Data: ${result.joinToString(separator = "\n")}")
         // Update UI with 'data'
     }
 
-    override fun onReadEvent(message: NfcMessage, throwable: Throwable?) {
-        // Handle events and errors
-        Log.w("NFC_SDK_App", "Read message: ${message.name} ($message)")
-    }
-}
-
-private val nfcWriteListener = object : NfcWriteListener {
-    override fun onWritten() {
+    override fun onWriteSuccess() {
         // Handle successful write operation
         Log.d("NFC_SDK_App", "Tag Write Success!")
     }
 
-    override  fun onWriteEvent(message: NfcMessage, throwable: Throwable? = null) {
+    override fun onError(message: NfcMessage, throwable: Throwable?) {
         // Handle events and errors
-        Log.e("NFC_SDK_App", "Write message: ${message.name} ($message)")
+        Log.w("NFC_SDK_App", "Read message: ${message.name} ($message)")
     }
 }
 ```
@@ -254,7 +243,7 @@ class YourNfcHandlingActivity : AppCompatActivity() {
             parser = yourTextDataParser,
             preparer = yourTextDataPreparer,
             nfcReadListener = yourNfcReadListener,
-            nfcWriteListener = yourNfcWriteListener
+            nfcListener = yourNfcWriteListener
         )
         // Create another handlers...
         
@@ -306,7 +295,7 @@ Manage NFC dispatch in your Activity's lifecycle methods and pass NFC events to 
 override fun onResume() {
     super.onResume()
     nfcAdmin.registerNfcStateReceiver() // register NFC state observer
-    nfcAdmin.enableReaderModeWithDefaults() // Enable work of nfcAdmin
+    nfcAdmin.enableReaderMode() // Enable work of nfcAdmin
 }
 
 override fun onPause() {
@@ -436,11 +425,9 @@ class MifareCustomHandler(
             mifare.close()
 
             val parsedData = this.parser.parse(blockData) // Use this.parser
-            nfcReadListener?.onNfcTagRead(parsedData, tag.id)
-        } catch (e: IOException) {
-            onReadError(NfcError.IO_EXCEPTION_WHILE_READING, e)
+            nfcListener?.onRead(parsedData)
         } catch (e: Exception) {
-            onReadError(NfcError.GENERAL_READ_ERROR, e)
+            onError(NfcError.READ_GENERAL_ERROR, e)
         } finally {
             try { mifare?.close() } catch (e: IOException) { /* Log quietly */ }
         }
@@ -449,7 +436,7 @@ class MifareCustomHandler(
     override fun writeDataToTag(tag: Tag) {
         val mifare = MifareClassic.get(tag)
         if (mifare == null || preparedData == null) {
-            onWriteError(if (mifare == null) NfcError.UNSUPPORTED_TAG_TECHNOLOGY else NfcError.NO_DATA_TO_WRITE)
+            onError(if (mifare == null) NfcError.WRITE_TAG_NOT_COMPLIANT_FOR_THIS_HANDLER else NfcError.WRITE_NO_DATA_TO_WRITE)
             return
         }
         val dataToWrite: ByteArray = preparedData ?: return
@@ -459,11 +446,9 @@ class MifareCustomHandler(
             // IMPORTANT: Authentication is required!
             mifare.writeBlock(0, dataToWrite) // Example: Write to block 0
             mifare.close()
-            nfcWriteListener?.onNfcWriteSuccess()
-        } catch (e: IOException) {
-            onWriteError(NfcError.IO_EXCEPTION_WHILE_WRITING, e)
+            nfcListener?.onNfcWriteSuccess()
         } catch (e: Exception) {
-            onWriteError(NfcError.GENERAL_WRITE_ERROR, e)
+            onError(NfcError.WRITE_GENERAL_ERROR, e)
         } finally {
             try { mifare?.close() } catch (e: IOException) { /* Log quietly */ }
             preparedData = null

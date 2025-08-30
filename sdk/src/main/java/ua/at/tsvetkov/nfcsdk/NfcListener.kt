@@ -8,7 +8,7 @@ package ua.at.tsvetkov.nfcsdk
  *
  * @param T The type of the successfully scanned data.
  */
-interface NfcReadListener<T> {
+interface NfcListener<T> {
     /**
      * Called when an NFC tag has been successfully scanned and its data processed.
      *
@@ -18,10 +18,15 @@ interface NfcReadListener<T> {
     fun onRead(result: List<T>)
 
     /**
+     * Called when data has been successfully written to the NFC tag.
+     */
+    fun onWriteSuccess()
+
+    /**
      * Called when an event/error occurs during the NFC tag scanning or processing.
      *
-     * @param message An [NfcMessage] enum value indicating the specific event/error that occurred.
+     * @param message An [NfcError] enum value indicating the specific event/error that occurred.
      * @param throwable A [Throwable] that occurred.
      */
-    fun onReadEvent(message: NfcMessage, throwable: Throwable? = null)
+    fun onError(message: NfcError, throwable: Throwable? = null)
 }
