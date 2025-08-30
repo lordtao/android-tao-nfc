@@ -27,7 +27,7 @@ fun TaskContainer.registerCopyAarTask(variant: String) {
         description = "Удаляет ранее собранные AAR в ../aar для $variant"
         delete(
             fileTree("../aar") {
-                include("taonfc*.aar")
+                include("taonfc-$variant-*.aar")
             }
         )
     }

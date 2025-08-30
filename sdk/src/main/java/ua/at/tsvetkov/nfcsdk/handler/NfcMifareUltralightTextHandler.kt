@@ -11,7 +11,7 @@ import kotlin.math.ceil
 import ua.at.tsvetkov.nfcsdk.NfcError
 import ua.at.tsvetkov.nfcsdk.NfcListener
 import ua.at.tsvetkov.nfcsdk.parser.MifareUltralightStringParser
-import ua.at.tsvetkov.nfcsdk.preparer.MifareUltralightStringPreparer
+import ua.at.tsvetkov.nfcsdk.preparer.NfcMifareUltralightStringPreparer
 
 /**
  * An [NfcHandler] implementation specifically designed for reading and writing
@@ -36,8 +36,8 @@ class NfcMifareUltralightTextHandler(
     private val startDataPage: Int = START_DATA_PAGE,
     private val pagesToAccess: Int = MAX_PAGES_TO_ACCESS
 ) : NfcHandler<ByteArray, String>( // D = ByteArray, R = String
-    MifareUltralightStringParser(pagesToAccess * MifareUltralightStringPreparer.PAGE_SIZE),
-    MifareUltralightStringPreparer(startDataPage, pagesToAccess * MifareUltralightStringPreparer.PAGE_SIZE),
+    MifareUltralightStringParser(pagesToAccess * NfcMifareUltralightStringPreparer.PAGE_SIZE),
+    NfcMifareUltralightStringPreparer(startDataPage, pagesToAccess * NfcMifareUltralightStringPreparer.PAGE_SIZE),
     nfcListener
 ) {
     companion object {

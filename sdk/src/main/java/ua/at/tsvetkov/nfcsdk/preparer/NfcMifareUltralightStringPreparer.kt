@@ -20,7 +20,7 @@ private const val MAX_LENGTH = 255
  * @param startDataPage The starting page where this data is intended to be written (for log/debug).
  * @param maxDataBytes The maximum number of bytes available for storing length + string data.
  */
-class MifareUltralightStringPreparer(private val startDataPage: Int, private val maxDataBytes: Int) :
+class NfcMifareUltralightStringPreparer(private val startDataPage: Int, private val maxDataBytes: Int) :
     NfcDataPreparer<String, ByteArray> {
 
     companion object {
@@ -35,7 +35,7 @@ class MifareUltralightStringPreparer(private val startDataPage: Int, private val
      *                                  or if data exceeds maxDataBytes.
      */
     override fun prepare(data: List<String>): ByteArray {
-        require(data.isNotEmpty()) { "Input list cannot be empty for MifareUltralightStringPreparer." }
+        require(data.isNotEmpty()) { "Input list cannot be empty for NfcMifareUltralightStringPreparer." }
 
         val stringToPrepare = data[0] // Берем первую (и ожидаемо единственную) строку из списка
         val stringBytes = stringToPrepare.toByteArray(StandardCharsets.UTF_8)

@@ -11,7 +11,7 @@ The NFC SDK library simplifies Near Field Communication (NFC) interactions in An
 *   **Extensibility**:
     *   Create custom `NfcHandler` implementations for different NFC tag technologies.
     *   Implement custom `NfcDataParser` and `NfcDataPreparer` to support various data encodings and application-specific data structures.
-*   **Listeners**: Clear callbacks for NFC adapter state changes, tag read results (data or errors), and write operation outcomes.
+*   **Listeners**: Callbacks for NFC adapter state changes, tag read results (data or errors), and write operation outcomes.
 *   **Error Handling**: Standardized `NfcAdminError` enum for detailed error reporting.
 
 ## Setup
@@ -162,7 +162,7 @@ Add intent filters to the Activity that will handle discovered NFC tags. This al
 
 *   **Listeners**:
     *   **`NfcStateListener`**: Receives callbacks when the device's NFC adapter is enabled or disabled.
-    *   **`NfcListener<R>`**: Called when an event/error occurs during the NFC tag scanning or processing.
+    *   **`NfcListener<R>`**: Called when an event/error occurs during the NFC tag scanning or processing in a handler.
         *   `onRead(result: List<R>)`: Called on successful read and parse.
         *   `onWriteSuccess()`: Called when data has been successfully written to the NFC tag.
         *   `onNfcError(error: NfcError, exception: Exception?)`: Called when an event/error occurs during the NFC tag scanning or processing.
