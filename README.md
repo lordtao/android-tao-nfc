@@ -36,17 +36,17 @@ dependencies {
 
 #### b. If the SDK is a Local `.aar` File
 
-If you have the SDK as a precompiled `.aar` file (e.g., `nfc-sdk.aar`), follow these steps:
+If you have the SDK as a precompiled `.aar` file (e.g., `taonfc.aar`), follow these steps:
 
 1.  **Create a `libs` directory**: In your app module's root directory (usually `app/`), create a directory named `libs` if it doesn't already exist.
-2.  **Copy the `.aar` file**: Place your `nfc-sdk.aar` file into this `app/libs` directory.
+2.  **Copy the `.aar` file**: Place your `taonfc.aar` file into this `app/libs` directory.
 3.  **Add the dependency**: Modify your app-level `build.gradle.kts` (or `build.gradle`) file to include this local `.aar` file.
 
     For `build.gradle.kts` (Kotlin DSL):
     ```gradle
     dependencies {
         // ... other dependencies
-        implementation(files("libs/nfc-sdk.aar")) // Adjust filename if different
+        implementation(files("libs/taonfc.aar")) // Adjust filename if different
     }
     ```
     ```
