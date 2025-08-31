@@ -18,6 +18,8 @@ The NFC SDK library simplifies Near Field Communication (NFC) interactions in An
 To get started quickly, the demo project provides a comprehensive setup example.
 https://github.com/lordtao/nfc-sdk/tree/master/app
 
+<p align="center"><img src="media/Demo.gif" alt="drawing"/></p>
+
 ### 1. Add SDK Dependency
 
 There are a couple of ways to add the SDK dependency, depending on how it's structured in your project:
