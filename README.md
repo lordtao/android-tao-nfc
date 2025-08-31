@@ -466,6 +466,7 @@ class MifareCustomHandler(
 ```
 **Note**: Interacting with `MifareClassic` tags is complex due to sector/block structure and authentication requirements. The example above is highly simplified.
 
+
 ## Troubleshooting
 
 *   **Android Studio**: As of now, Android Studio emulators lack support for NFC emulation. A physical device is necessary to test NFC features.
@@ -476,8 +477,26 @@ class MifareCustomHandler(
     *   Check if your Activity's `launchMode` is suitable (`singleTop` or `singleTask`).
 *   **Data Binding Issues**: If using LiveData from listeners with Data Binding, ensure `binding.lifecycleOwner` is set in your Fragment/Activity.
 *   **Tag Specifics**: Different NFC tags have different capabilities. Test with various tags.
-*   **Logs**: Check Logcat for messages (e.g., from `NFC_SDK_App` if `isAdminLogEnabled = true`) and any exceptions. 
+*   **Logs**: Check Logcat for messages (e.g., from `NFC_SDK_App` if `isAdminLogEnabled = true`) and any exceptions.
 *   **tao-log**: Recommend using the library  https://github.com/lordtao/android-tao-log for detailed and useful logs
+
+## Licence
+
+```
+   Copyright 2025 Aleksandr Tsvetkov
+
+   Licensed under the Apache License, Version 2.0 (the "License");
+   you may not use this file except in compliance with the License.
+   You may obtain a copy of the License at
+
+       http://www.apache.org/licenses/LICENSE-2.0
+
+   Unless required by applicable law or agreed to in writing, software
+   distributed under the License is distributed on an "AS IS" BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   See the License for the specific language governing permissions and
+   limitations under the License.
+```
 
 ---
 This updated README should now accurately reflect the new class signatures.
