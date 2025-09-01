@@ -5,7 +5,10 @@ plugins {
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.ktlint)
     alias(libs.plugins.detekt)
+    `maven-publish`
 }
+
+val libName = "taonfc"
 
 val skipCommitsCount = 0
 val versionMajor = 1
@@ -25,37 +28,35 @@ fun TaskContainer.registerCopyAarTask(variant: String) {
     register<Delete>("deleteOld${capVariant}Aar") {
         group = "aar"
         description = "Удаляет ранее собранные AAR в ../aar для $variant"
-        delete(
-            fileTree("../aar") {
-                include("taonfc-$variant-*.aar")
-            }
-        )
+        delete(fileTree("../aar") {
+            include("$libName-$variant*.aar")
+        })
     }
 
     register<Copy>("copy${capVariant}Aar") {
         group = "aar"
         description = "Copy AAR $variant with version $versionName to ../aar"
-        dependsOn("assemble$capVariant")
+        dependsOn("assemble${capVariant}")
         dependsOn("deleteOld${capVariant}Aar")
-        val aarFile = file("build/outputs/aar/sdk-$variant.aar")
+        val aarFile = file("build/outputs/aar/$libName-$versionName-$variant.aar")
         doFirst {
             // Создать ../aar если не существует
             file("../aar").mkdirs()
             if (!aarFile.exists()) {
                 throw GradleException("AAR file does not exist: $aarFile")
             }
-            println("Copying $aarFile to ../aar/taonfc-$variant.aar")
+            println("Copying $aarFile to ../aar/$libName-$variant.aar")
         }
         from(aarFile)
         into("../aar")
         if (variant == "release") {
-            rename { "taonfc.aar" }
+            rename { "$libName.aar" }
         } else {
-            rename { "taonfc-$variant.aar" }
+            rename { "$libName-$variant.aar" }
         }
         doLast {
             val versionFile = file("../aar/README.txt")
-            versionFile.writeText("Library: taonfc\nVersion: $versionName\nCreated: ${Date()}")
+            versionFile.writeText("Library: $libName\nVersion: $versionName\nCreated: ${Date()}")
             println("Created version file: ${versionFile.absolutePath}")
         }
     }
@@ -101,6 +102,12 @@ android {
         viewBinding = true
         buildConfig = true
     }
+    publishing {
+        singleVariant("release") {
+            withSourcesJar()
+            withJavadocJar()
+        }
+    }
 }
 
 kotlin {
@@ -108,12 +115,13 @@ kotlin {
 }
 
 dependencies {
-    compileOnly(files("${rootProject.projectDir}/libs/taocore.aar"))
-    compileOnly(files("${rootProject.projectDir}/libs/taolog.aar"))
 
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.appcompat)
     implementation(libs.material)
+
+    implementation(libs.tao.core)
+    implementation(libs.tao.log)
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
@@ -133,5 +141,57 @@ afterEvaluate {
     tasks.named("build").configure {
         dependsOn("copyReleaseAar")
         dependsOn("copyDebugAar")
+    }
+}
+
+
+val repo = "android-tao-nfc"
+val repoDescription = "The NFC SDK library simplifies Near Field Communication (NFC) " +
+        "interactions in Android applications."
+
+val owner = "lordtao"
+val libGroupId = "ua.at.tsvetkov"
+val libArtifactId = libName
+val libVersionName = versionName
+
+val licenseName = "Apache License Version 2.0"
+val licenseUrl = "http://www.apache.org/licenses/"
+
+afterEvaluate {
+    publishing {
+        publications {
+            create<MavenPublication>("release") {
+                groupId = libGroupId
+                artifactId = libArtifactId
+                version = libVersionName
+
+                from(components.getByName("release"))
+
+                pom {
+                    name.set(libArtifactId) // Или более описательное имя
+                    description.set(repoDescription)
+                    url.set("https://github.com/$owner/$repo") // URL of your project
+
+                    licenses {
+                        license {
+                            name.set(licenseName)
+                            url.set(licenseUrl)
+                        }
+                    }
+                    developers {
+                        developer {
+                            id.set(owner)
+                            name.set("Alexandr Tsvetkov")
+                            email.set("tsvetkov2010@gmail.com")
+                        }
+                    }
+                    scm {
+                        connection.set("scm:git:git://github.com/$owner/$repo.git")
+                        developerConnection.set("scm:git:ssh://github.com/$owner/$repo.git")
+                        url.set("https://github.com/$owner/$repo")
+                    }
+                }
+            }
+        }
     }
 }

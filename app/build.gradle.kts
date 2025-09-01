@@ -50,8 +50,6 @@ kotlin {
 
 dependencies {
     implementation(project(":sdk"))
-    implementation(files("${rootProject.projectDir}/libs/taocore.aar"))
-    implementation(files("${rootProject.projectDir}/libs/taolog.aar"))
 
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.appcompat)
@@ -62,6 +60,9 @@ dependencies {
     implementation(libs.androidx.navigation.fragment.ktx)
     implementation(libs.androidx.navigation.ui.ktx)
     implementation(libs.androidx.databinding.runtime)
+
+    implementation(libs.tao.core)
+    implementation(libs.tao.log)
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)

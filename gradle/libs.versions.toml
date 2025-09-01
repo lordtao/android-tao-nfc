@@ -8,27 +8,36 @@ espressoCore = "3.7.0"
 appcompat = "1.7.1"
 material = "1.12.0"
 constraintlayout = "2.2.1"
-lifecycleLivedataKtx = "2.9.2"
-lifecycleViewmodelKtx = "2.9.2"
+lifecycleLivedataKtx = "2.9.3"
+lifecycleViewmodelKtx = "2.9.3"
 navigationFragmentKtx = "2.9.3"
 navigationUiKtx = "2.9.3"
-databindingRuntime = "8.12.1"
+databindingRuntime = "8.12.2"
 ktlintGradle = "13.1.0"
 detekt = "1.23.8"
 mockitoCore = "5.19.0"
 mockitoInline = "5.11.0"
 mockitoKotlin = "6.0.0"
+taolog = "2.2.99"
+taoCore = "1.6.126"
 
 [libraries]
+# Google
+material = { group = "com.google.android.material", name = "material", version.ref = "material" }
+
+# AndroidX
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
 androidx-appcompat = { group = "androidx.appcompat", name = "appcompat", version.ref = "appcompat" }
-material = { group = "com.google.android.material", name = "material", version.ref = "material" }
 androidx-constraintlayout = { group = "androidx.constraintlayout", name = "constraintlayout", version.ref = "constraintlayout" }
 androidx-lifecycle-livedata-ktx = { group = "androidx.lifecycle", name = "lifecycle-livedata-ktx", version.ref = "lifecycleLivedataKtx" }
 androidx-lifecycle-viewmodel-ktx = { group = "androidx.lifecycle", name = "lifecycle-viewmodel-ktx", version.ref = "lifecycleViewmodelKtx" }
 androidx-navigation-fragment-ktx = { group = "androidx.navigation", name = "navigation-fragment-ktx", version.ref = "navigationFragmentKtx" }
 androidx-navigation-ui-ktx = { group = "androidx.navigation", name = "navigation-ui-ktx", version.ref = "navigationUiKtx" }
 androidx-databinding-runtime = { group = "androidx.databinding", name = "databinding-runtime", version.ref = "databindingRuntime" }
+
+# Libs
+tao-core = { group = "com.github.lordtao", name = "android-tao-core", version.ref = "taoCore" }
+tao-log = { group = "com.github.lordtao", name = "android-tao-log", version.ref = "taolog" }
 
 # Testing
 junit = { group = "junit", name = "junit", version.ref = "junit" }
