@@ -6,6 +6,7 @@ package ua.at.tsvetkov.nfcsdk.handler
 
 import android.nfc.Tag
 import android.nfc.tech.MifareUltralight
+import android.util.Log
 import java.io.IOException
 import kotlin.math.ceil
 import ua.at.tsvetkov.nfcsdk.NfcError
@@ -50,7 +51,7 @@ class NfcMifareUltralightTextHandler(
 
     init {
         if (startDataPage < START_DATA_PAGE) {
-            System.err.println(
+            Log.e("NfcMifareUltralightTextHandler",
                 "Warning: startDataPage ($startDataPage) is less than 4. " +
                     "Writing to early pages can be risky."
             )

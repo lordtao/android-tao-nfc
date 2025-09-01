@@ -7,7 +7,7 @@ package ua.at.tsvetkov.nfcsdk.preparer
 import android.net.Uri
 import android.nfc.NdefMessage
 import android.nfc.NdefRecord
-import ua.at.tsvetkov.util.logger.Log
+import android.util.Log
 
 /**
  * Converts a list of [Uri] objects into an [NdefMessage] containing NDEF URI Records.
@@ -21,8 +21,8 @@ class NfcNdefUriDataPreparer : NfcDataPreparer<Uri, NdefMessage> {
             try {
                 val record = NdefRecord.createUri(uri)
                 list.add(record)
-            } catch (e: Exception) {
-                Log.e("Error creating NdefRecord for URI: $uri", e)
+            } catch (e: IllegalArgumentException) {
+                Log.e("NfcNdefUriDataPreparer", "Error creating NdefRecord for URI: $uri", e)
             }
         }
         return NdefMessage(list.toTypedArray())

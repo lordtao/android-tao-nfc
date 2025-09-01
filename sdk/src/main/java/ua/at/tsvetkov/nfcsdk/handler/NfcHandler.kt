@@ -32,8 +32,14 @@ import ua.at.tsvetkov.nfcsdk.preparer.NfcDataPreparer
 abstract class NfcHandler<D, R>(
     var parser: NfcDataParser<D, R>,
     var preparer: NfcDataPreparer<R, D>,
-    var nfcListener: NfcListener<R>
+    var nfcListener: NfcListener<R>,
 ) {
+
+    /**
+     * Flag indicating whether logging is enabled. Use this flag in your custom handler as you see fit.
+     * */
+    var isLogEnabled = false
+
     /**
      * Stores the data (in its low-level format [D]) that has been prepared by
      * [prepareToWrite] and is ready to be written to an NFC tag by [writeDataToTag].
