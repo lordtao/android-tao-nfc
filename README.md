@@ -1,4 +1,5 @@
 # TAO NFC SDK (Android)
+[![](https://jitpack.io/v/lordtao/android-tao-nfc.svg)](https://jitpack.io/#lordtao/android-tao-nfc)
 
 The NFC SDK library simplifies Near Field Communication (NFC) interactions in Android applications. It provides a higher-level abstraction over the native Android NFC API, making it easier to read from, write to, and manage NFC tags, with a focus on NDEF (NFC Data Exchange Format) data. The SDK is designed to be extensible, allowing developers to add support for various tag technologies and custom data formats.
 
@@ -22,44 +23,25 @@ https://github.com/lordtao/nfc-sdk/tree/master/app
 
 ### 1. Add SDK Dependency
 
-There are a couple of ways to add the SDK dependency, depending on how it's structured in your project:
+Step 1. Add the JitPack repository to your build file
 
-#### a. If the SDK is a Local Module
-
-If this SDK is a local module (e.g., named `sdk`) within your Android Studio project, add it as a dependency in your app-level `build.gradle.kts` (or `build.gradle`) file:
-```gradle
-// build.gradle.kts (Kotlin DSL)
-dependencies {
-    implementation(project(":sdk"))
-}
+```
+dependencyResolutionManagement {
+        repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
+        repositories {
+            mavenCentral()
+            maven { url = uri("https://jitpack.io") }
+        }
+    }
 ```
 
-#### b. If the SDK is a Local `.aar` File
+Step 2. Add the dependency with latest version [![](https://jitpack.io/v/lordtao/android-tao-nfc.svg)](https://jitpack.io/#lordtao/android-tao-nfc)
 
-If you have the SDK as a precompiled `.aar` file (e.g., `taonfc.aar`), follow these steps:
-
-1.  **Create a `libs` directory**: In your app module's root directory (usually `app/`), create a directory named `libs` if it doesn't already exist.
-2.  **Copy the `.aar` file**: Place your `taonfc.aar` file into this `app/libs` directory.
-3.  **Add the dependency**: Modify your app-level `build.gradle.kts` (or `build.gradle`) file to include this local `.aar` file.
-
-    For `build.gradle.kts` (Kotlin DSL):
-    ```gradle
-    dependencies {
-        // ... other dependencies
-        implementation(files("libs/taonfc.aar")) // Adjust filename if different
+```
+dependencies {
+            implementation("com.github.lordtao:android-tao-nfc:latestVersion")
     }
-    ```
-    ```
-    If you have multiple `.aar` files in the `libs` directory and want to include all of them, you can also do:
-
-    For `build.gradle.kts` (Kotlin DSL):
-    ```gradle
-    dependencies {
-        // ... other dependencies
-        implementation(fileTree(mapOf("dir" to "libs", "include" to listOf("*.aar"))))
-    }
-    ```
-4.  **Sync Project**: After making these changes, sync your Android Studio project with the Gradle files.
+```
 
 ### 2. Configure Application's `AndroidManifest.xml`
 
