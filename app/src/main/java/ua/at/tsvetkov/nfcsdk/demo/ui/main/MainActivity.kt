@@ -47,20 +47,7 @@ class MainActivity : AppCompatActivity() {
         setupActionBarWithNavController(navController, appBarConfiguration)
         navView.setupWithNavController(navController)
 
-        setupNfc()
-    }
-
-    private fun setupNfc() {
-        nfcAdmin = NfcAdmin(
-            activity = this,
-            isAdminLogEnabled = true,
-            nfcStateListener = nfcViewModel.stateListener
-        )
-        nfcAdmin.addHandlers(
-            nfcViewModel.textHandler,
-            nfcViewModel.uriHandler
-//            nfcViewModel.nfcMifareUltralightHandler
-        )
+        nfcAdmin = nfcViewModel.createNfcAdmin(this)
     }
 
     override fun onResume() {

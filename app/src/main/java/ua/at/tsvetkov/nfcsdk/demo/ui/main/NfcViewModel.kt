@@ -1,9 +1,11 @@
 package ua.at.tsvetkov.nfcsdk.demo.ui.main
 
+import android.app.Activity
 import android.net.Uri
 import androidx.core.net.toUri
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
+import ua.at.tsvetkov.nfcsdk.NfcAdmin
 import ua.at.tsvetkov.nfcsdk.NfcAdminError
 import ua.at.tsvetkov.nfcsdk.NfcAdminState
 import ua.at.tsvetkov.nfcsdk.NfcError
@@ -103,6 +105,20 @@ class NfcViewModel : ViewModel() {
             }
         }
     )
+
+    fun createNfcAdmin(activity: Activity): NfcAdmin {
+        val nfcAdmin = NfcAdmin(
+            activity = activity,
+            isAdminLogEnabled = true,
+            nfcStateListener = stateListener
+        )
+        nfcAdmin.addHandlers(
+            textHandler,
+            uriHandler
+//            nfcMifareUltralightHandler
+        )
+        return nfcAdmin
+    }
 
     private fun fillTech(tech: List<String>) {
         val shortTeach = tech
