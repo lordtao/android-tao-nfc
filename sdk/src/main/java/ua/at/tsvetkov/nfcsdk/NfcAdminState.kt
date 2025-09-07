@@ -60,7 +60,20 @@ sealed class NfcAdminState(val message: String) {
     class NfcTechDiscovered(val tech: List<String>) :
         NfcAdminState(
             "NFC tech discovered: ${tech.joinToString(", ")}"
-        )
+        ){
+        /**
+         * Extracts and returns the simple names of the discovered NFC technologies.
+         *
+         * For example, if a technology is reported as "[android.nfc.tech.NfcA]",
+         * this function will return `NfcA`.
+         *
+         * @return A list of strings, where each string is the simple class name
+         * of a discovered NFC technology.
+         */
+        fun getTechNames(): List<String> {
+                return tech.map { it.substringAfterLast('.') }
+            }
+        }
 
     fun getName() = this::class.simpleName
 
