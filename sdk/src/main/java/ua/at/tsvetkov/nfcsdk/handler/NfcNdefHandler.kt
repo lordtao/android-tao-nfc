@@ -170,6 +170,20 @@ abstract class NfcNdefHandler<R>(
 
     companion object {
 
+        /**
+         * Checks if a given [NfcError] can potentially indicate that an NFC tag is empty or
+         * not yet NDEF formatted, suggesting it might be writable or simply uninitialized.
+         *
+         * This is useful for providing more specific user feedback after a read attempt fails.
+         * For example, if this function returns `true`, the UI might suggest that the tag
+         * is new or empty and the user could try writing to it.
+         *
+         * @param nfcError The [NfcError] received from a read operation.
+         * @return `true` if the error type suggests the tag could be empty or not NDEF formatted
+         * (specifically [NfcError.READ_TAG_NOT_NDEF_FORMATTED],
+         * [NfcError.READ_NDEF_MESSAGE_NULL], or [NfcError.READ_NDEF_MESSAGE_EMPTY]),
+         * `false` otherwise.
+         */
         fun isPossibleEmptyTag(nfcError: NfcError) = nfcError == NfcError.READ_TAG_NOT_NDEF_FORMATTED ||
             nfcError == NfcError.READ_NDEF_MESSAGE_NULL ||
             nfcError == NfcError.READ_NDEF_MESSAGE_EMPTY
