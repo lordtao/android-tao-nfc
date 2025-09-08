@@ -1,8 +1,6 @@
 package ua.at.tsvetkov.nfcsdk.demo.ui.main
 
 import android.app.Activity
-import android.net.Uri
-import androidx.core.net.toUri
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import ua.at.tsvetkov.nfcsdk.NfcAdmin
@@ -13,7 +11,6 @@ import ua.at.tsvetkov.nfcsdk.NfcListener
 import ua.at.tsvetkov.nfcsdk.NfcStateListener
 import ua.at.tsvetkov.nfcsdk.handler.NfcNdefHandler.Companion.isPossibleEmptyTag
 import ua.at.tsvetkov.nfcsdk.handler.NfcNdefTextHandler
-import ua.at.tsvetkov.nfcsdk.handler.NfcNdefUriHandler
 import ua.at.tsvetkov.util.logger.Log
 
 private const val MAX_DEMO_RESULTS = 5
@@ -64,28 +61,6 @@ class NfcViewModel : ViewModel() {
         }
     }
 
-    val uriHandler = NfcNdefUriHandler(
-        nfcListener = object : NfcListener<Uri> {
-            override fun onRead(result: List<Uri>) {
-                createResultsList(result.map { it.toString() })
-            }
-
-            override fun onWriteSuccess() {
-                nfcWriteStatus.postValue("Write success")
-                nfcTextToWrite.postValue("")
-            }
-
-            override fun onError(nfcError: NfcError, throwable: Throwable?) {
-                if (nfcError.isReadError()) {
-                    checkEmptyTag(nfcError)
-                } else {
-                    nfcWriteStatus.postValue(nfcError.errorMsg)
-                }
-                Log.w("NFC NDEF: ${nfcError.name} ($nfcError)")
-            }
-        }
-    )
-
     val textHandler = NfcNdefTextHandler(
         nfcListener = object : NfcListener<String> {
             override fun onRead(result: List<String>) {
@@ -116,7 +91,7 @@ class NfcViewModel : ViewModel() {
         )
         nfcAdmin.addHandlers(
             textHandler,
-            uriHandler
+//            uriHandler
 //            nfcMifareUltralightHandler
         )
         return nfcAdmin
@@ -128,6 +103,28 @@ class NfcViewModel : ViewModel() {
         nfcTeach.postValue("Teach: ${tech.joinToString(separator = ", ")}")
     }
 
+//    val uriHandler = NfcNdefUriHandler(
+//        nfcListener = object : NfcListener<Uri> {
+//            override fun onRead(result: List<Uri>) {
+//                createResultsList(result.map { it.toString() })
+//            }
+//
+//            override fun onWriteSuccess() {
+//                nfcWriteStatus.postValue("Write success")
+//                nfcTextToWrite.postValue("")
+//            }
+//
+//            override fun onError(nfcError: NfcError, throwable: Throwable?) {
+//                if (nfcError.isReadError()) {
+//                    checkEmptyTag(nfcError)
+//                } else {
+//                    nfcWriteStatus.postValue(nfcError.errorMsg)
+//                }
+//                Log.w("NFC NDEF: ${nfcError.name} ($nfcError)")
+//            }
+//        }
+//    )
+//
 //    val nfcMifareUltralightHandler = NfcMifareUltralightTextHandler(
 //        nfcListener = object : NfcListener<String> {
 //            override fun onNfcTagScanned(result: List<String>) {
@@ -157,8 +154,6 @@ class NfcViewModel : ViewModel() {
 
     fun onClearTagClick() {
         textHandler.prepareCleaningData()
-        uriHandler.prepareCleaningData()
-//        nfcMifareUltralightHandler.prepareCleaningData()
         nfcWriteStatus.postValue("Ready to clearing. Bring to NFC device")
     }
 
@@ -167,29 +162,17 @@ class NfcViewModel : ViewModel() {
         val string = nfcTextToWrite.value ?: ""
         if (string.isEmpty()) {
             textHandler.clearPreparedData()
-            uriHandler.clearPreparedData()
-//            nfcMifareUltralightHandler.clearPreparedData()
             nfcWriteStatus.postValue("There is nothing to write. Write some text first.")
             return
         }
-        @Suppress("SwallowedException")
-        try {
-            // For Uri
-            uriHandler.prepareToWrite(listOf(string.toUri()))
-        } catch (_: Exception) {
-            // For Text
-            textHandler.prepareToWrite(listOf(string))
-        }
-//        nfcMifareUltralightHandler.prepareToWrite(listOf(string))
+
+        textHandler.prepareToWrite(listOf(string))
         nfcWriteStatus.postValue("Ready to write. Bring to NFC device")
         isReadyToWrite = true
     }
 
     fun onClearStatusClick() {
         textHandler.clearPreparedData()
-        uriHandler.clearPreparedData()
-//        nfcMifareUltralightHandler.clearPreparedData()
-
         nfcWriteStatus.postValue("Status: Waiting to write...")
     }
 
@@ -199,9 +182,7 @@ class NfcViewModel : ViewModel() {
 
     private fun checkEmptyTag(message: NfcError) {
         if (isPossibleEmptyTag(message)) {
-            if (nfcReadStatus.value != EMPTY_TAG_MESSAGE) {
-                nfcReadStatus.postValue(EMPTY_TAG_MESSAGE)
-            }
+            nfcReadStatus.postValue(EMPTY_TAG_MESSAGE)
         } else {
             nfcReadStatus.postValue(message.errorMsg)
         }
