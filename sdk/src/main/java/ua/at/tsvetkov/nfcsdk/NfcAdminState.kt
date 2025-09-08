@@ -63,7 +63,7 @@ sealed class NfcAdminState(val message: String) {
     class NfcTechDiscovered(val tech: List<String>) :
         NfcAdminState(
             "NFC tech discovered: ${tech.joinToString(", ")}"
-        ){
+        ) {
         /**
          * Extracts and returns the simple names of the discovered NFC technologies.
          *
@@ -74,10 +74,10 @@ sealed class NfcAdminState(val message: String) {
          * of a discovered NFC technology.
          */
         fun getTechNames(): List<String> {
-                return tech.map { it.substringAfterLast('.') }
-            }
+            return tech.map { it.substringAfterLast('.') }
         }
-    
+    }
+
     /**
      * Represents the state where a complete NFC [android.nfc.Tag] object has been discovered.
      *
@@ -91,12 +91,29 @@ sealed class NfcAdminState(val message: String) {
     class NfcTagDiscovered(val tag: Tag) :
         NfcAdminState(
             "NFC Tag discovered: ${tag.id.joinToString("") { "%02X".format(it) }}"
-        )
+        ) {
+
+        /**
+         * A list of fully qualified class names of NFC technologies supported by the discovered [tag].
+         * This is derived directly from `tag.techList`.
+         * Example: `["android.nfc.tech.NfcA", "android.nfc.tech.MifareUltralight", "android.nfc.tech.Ndef"]`
+         */
+        val techList = tag.techList.asList()
+
+        /**
+         * A list of simple class names of NFC technologies supported by the discovered [tag].
+         * This is derived from `tag.techList` by taking the substring after the last dot for each technology.
+         * Example: `["NfcA", "MifareUltralight", "Ndef"]`
+         */
+        val techNames = tag.techList.map { it.substringAfterLast('.') }
+
+    }
 
     /**
      * Returns the simple class name of the current [NfcAdminState] instance.
      *
      * This can be useful for logging or displaying the specific type of the current NFC state.
+     * For example, for an instance of `NfcOn`, this would return "NfcOn".
      *
      * @return The simple name of the current NFC state class as a String.
      */
