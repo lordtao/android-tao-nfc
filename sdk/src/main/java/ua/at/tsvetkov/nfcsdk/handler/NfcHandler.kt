@@ -34,6 +34,16 @@ abstract class NfcHandler<D, R>(
     var preparer: NfcDataPreparer<R, D>,
     var nfcListener: NfcListener<R>,
 ) {
+    
+    /**
+     * Controls whether this NFC handler is currently active and should process NFC events.
+     *
+     * If set to `false`, the handler might be skipped or ignore incoming NFC tag interactions,
+     * even if its [supportedTechs] match the discovered tag. This allows for dynamically
+     * enabling or disabling specific handlers without removing them from a list of available handlers.
+     * Defaults to `true`.
+     */
+    var isEnabled = true
 
     /**
      * Flag indicating whether logging is enabled. Use this flag in your custom handler as you see fit.

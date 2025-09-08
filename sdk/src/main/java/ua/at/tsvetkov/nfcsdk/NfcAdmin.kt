@@ -32,7 +32,7 @@ import ua.at.tsvetkov.util.logger.Log
 class NfcAdmin(
     private val activity: Activity,
     private var nfcStateListener: NfcStateListener? = null,
-    private var isAdminLogEnabled: Boolean = false
+    private var isAdminLogEnabled: Boolean = false,
 ) : NfcAdapter.ReaderCallback {
     private val nfcAdapter: NfcAdapter? by lazy { NfcAdapter.getDefaultAdapter(activity) }
 
@@ -228,15 +228,13 @@ class NfcAdmin(
         nfcStateListener?.onNfcStateChanged(NfcAdminState.NfcTagDiscovered(tag))
 
         activity.runOnUiThread {
-            handlers
+            handlers.filter { it.isEnabled && it.isSupportTech(scannedTechs) }
                 .forEach { handler ->
-                    if (handler.isSupportTech(scannedTechs)) {
-                        handler.tag = tag
-                        if (handler.isHavePreparedDataToWrite()) {
-                            handler.writeDataToTag()
-                        } else {
-                            handler.readDataFromTag()
-                        }
+                    handler.tag = tag
+                    if (handler.isHavePreparedDataToWrite()) {
+                        handler.writeDataToTag()
+                    } else {
+                        handler.readDataFromTag()
                     }
                 }
         }
@@ -253,9 +251,9 @@ class NfcAdmin(
          * - [NfcAdapter.FLAG_READER_SKIP_NDEF_CHECK]
          */
         const val DEFAULT_READER_FLAGS = NfcAdapter.FLAG_READER_NFC_A or
-            NfcAdapter.FLAG_READER_NFC_B or
-            NfcAdapter.FLAG_READER_NFC_F or
-            NfcAdapter.FLAG_READER_NFC_V or
-            NfcAdapter.FLAG_READER_NFC_BARCODE
+                NfcAdapter.FLAG_READER_NFC_B or
+                NfcAdapter.FLAG_READER_NFC_F or
+                NfcAdapter.FLAG_READER_NFC_V or
+                NfcAdapter.FLAG_READER_NFC_BARCODE
     }
 }
