@@ -93,6 +93,12 @@ sealed class NfcAdminState(val message: String) {
         NfcAdminState(
             "NFC Tag discovered: ${tag.id.toHexString()}"
         ) {
+            
+        /**
+         * The determined ISO tag type based on the technologies supported by the discovered [tag].
+         * This is determined using [IsoTagType.determineIsoTagType].
+         */
+        val tagType = IsoTagType.determineIsoTagType(tag)
 
         /**
          * The ID of the discovered NFC tag, formatted as a hexadecimal string.

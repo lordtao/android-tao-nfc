@@ -28,6 +28,8 @@ class NfcViewModel : ViewModel() {
 
     val nfcTeach = MutableLiveData("NFC Teach: Not discovered yet.")
 
+    val nfcType = MutableLiveData("NFC Type: Not discovered yet.")
+
     val nfcReadStatus = MutableLiveData("No results yet.")
 
     val nfcWriteStatus = MutableLiveData("Status: Waiting to write...")
@@ -51,7 +53,7 @@ class NfcViewModel : ViewModel() {
                 NfcAdminState.NfcOn -> nfcEnabled.postValue("NFC Enabled: YES")
                 NfcAdminState.NfcTurningOff -> nfcEnabled.postValue("NFC Enabled: turning off...")
                 NfcAdminState.NfcTurningOn -> nfcEnabled.postValue("NFC Enabled: turning on...")
-                is NfcAdminState.NfcTagDiscovered -> fillTech(state.techNames)
+                is NfcAdminState.NfcTagDiscovered -> fillTech(state)
                 else -> Unit
             }
             Log.i("NFC State: ${state.getName()}. $state")
@@ -120,7 +122,9 @@ class NfcViewModel : ViewModel() {
         return nfcAdmin
     }
 
-    private fun fillTech(tech: List<String>) {
+    private fun fillTech(state: NfcAdminState.NfcTagDiscovered) {
+        val tech = state.techNames
+        nfcType.postValue("Type: ${state.tagType.description}")
         nfcTeach.postValue("Teach: ${tech.joinToString(separator = ", ")}")
     }
 

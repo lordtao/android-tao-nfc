@@ -255,5 +255,6 @@ class NfcAdmin(
                 NfcAdapter.FLAG_READER_NFC_F or
                 NfcAdapter.FLAG_READER_NFC_V or
                 NfcAdapter.FLAG_READER_NFC_BARCODE
+
     }
 }

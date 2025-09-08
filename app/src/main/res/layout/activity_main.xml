@@ -51,6 +51,17 @@
             app:layout_constraintTop_toBottomOf="@+id/tv_nfc_enabled"
             tools:text="NFC Teach: Checking..." />
 
+        <TextView
+            android:id="@+id/tv_nfc_type"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:text="@{viewModel.nfcType}"
+            android:textColor="@color/nfcColorSecondary"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/tv_nfc_tech"
+            tools:text="NFC Type: Checking..." />
 
         <androidx.fragment.app.FragmentContainerView
             android:id="@+id/nav_host_fragment_activity_main"
@@ -61,7 +72,7 @@
             app:layout_constraintBottom_toTopOf="@id/nav_view"
             app:layout_constraintLeft_toLeftOf="parent"
             app:layout_constraintRight_toRightOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/tv_nfc_tech"
+            app:layout_constraintTop_toBottomOf="@id/tv_nfc_type"
             app:navGraph="@navigation/mobile_navigation" />
 
         <com.google.android.material.bottomnavigation.BottomNavigationView
