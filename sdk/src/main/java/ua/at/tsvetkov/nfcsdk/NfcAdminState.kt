@@ -1,6 +1,7 @@
 package ua.at.tsvetkov.nfcsdk
 
 import android.nfc.Tag
+import kotlin.text.toHexString
 
 /**
  * Created by Alexandr Tsvetkov on 26.08.2025.
@@ -90,8 +91,15 @@ sealed class NfcAdminState(val message: String) {
      */
     class NfcTagDiscovered(val tag: Tag) :
         NfcAdminState(
-            "NFC Tag discovered: ${tag.id.joinToString("") { "%02X".format(it) }}"
+            "NFC Tag discovered: ${tag.id.toHexString()}"
         ) {
+
+        /**
+         * The ID of the discovered NFC tag, formatted as a hexadecimal string.
+         * This is derived from `tag.id`.
+         * Example: `"041A2B3C4D5E6F"`
+         */
+        val tagIdHexString = tag.id.toHexString()
 
         /**
          * A list of fully qualified class names of NFC technologies supported by the discovered [tag].
