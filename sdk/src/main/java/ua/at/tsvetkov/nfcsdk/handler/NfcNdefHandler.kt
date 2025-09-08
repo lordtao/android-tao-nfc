@@ -6,14 +6,13 @@ package ua.at.tsvetkov.nfcsdk.handler
 
 import android.nfc.NdefMessage
 import android.nfc.NdefRecord
-import android.nfc.Tag
 import android.nfc.tech.Ndef
 import android.nfc.tech.NdefFormatable
-import java.io.IOException
 import ua.at.tsvetkov.nfcsdk.NfcError
 import ua.at.tsvetkov.nfcsdk.NfcListener
 import ua.at.tsvetkov.nfcsdk.parser.NfcDataParser
 import ua.at.tsvetkov.nfcsdk.preparer.NfcDataPreparer
+import java.io.IOException
 
 /**
  * An abstract NFC handler specialized for reading and writing NDEF (NFC Data Exchange Format)
@@ -42,13 +41,13 @@ import ua.at.tsvetkov.nfcsdk.preparer.NfcDataPreparer
 abstract class NfcNdefHandler<R>(
     parser: NfcDataParser<NdefMessage, R>,
     preparer: NfcDataPreparer<R, NdefMessage>,
-    nfcListener: NfcListener<R>
+    nfcListener: NfcListener<R>,
 ) : NfcHandler<NdefMessage, R>(parser, preparer, nfcListener) {
 
     override val supportedTechs = listOf(Ndef::class.java.name, NdefFormatable::class.java.name)
 
     @Suppress("ReturnCount")
-    override fun readDataFromTag(tag: Tag) {
+    override fun readDataFromTag() {
         val ndef = Ndef.get(tag)
         val ndefFormatable = NdefFormatable.get(tag)
         if (ndef == null && ndefFormatable == null) {
@@ -105,7 +104,7 @@ abstract class NfcNdefHandler<R>(
         }
     }
 
-    override fun writeDataToTag(tag: Tag) {
+    override fun writeDataToTag() {
         preparedData?.let { message ->
             var ndef: Ndef? = null
             var ndefFormatable: NdefFormatable? = null
@@ -185,7 +184,7 @@ abstract class NfcNdefHandler<R>(
          * `false` otherwise.
          */
         fun isPossibleEmptyTag(nfcError: NfcError) = nfcError == NfcError.READ_TAG_NOT_NDEF_FORMATTED ||
-            nfcError == NfcError.READ_NDEF_MESSAGE_NULL ||
-            nfcError == NfcError.READ_NDEF_MESSAGE_EMPTY
+                nfcError == NfcError.READ_NDEF_MESSAGE_NULL ||
+                nfcError == NfcError.READ_NDEF_MESSAGE_EMPTY
     }
 }

@@ -2,6 +2,7 @@ package ua.at.tsvetkov.nfcsdk.demo.ui.main
 
 import android.app.Activity
 import android.net.Uri
+import android.nfc.Tag
 import androidx.core.net.toUri
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
@@ -51,7 +52,7 @@ class NfcViewModel : ViewModel() {
                 NfcAdminState.NfcOn -> nfcEnabled.postValue("NFC Enabled: YES")
                 NfcAdminState.NfcTurningOff -> nfcEnabled.postValue("NFC Enabled: turning off...")
                 NfcAdminState.NfcTurningOn -> nfcEnabled.postValue("NFC Enabled: turning on...")
-                is NfcAdminState.NfcTechDiscovered -> fillTech(state.tech)
+                is NfcAdminState.NfcTagDiscovered -> fillTech(state.tag)
                 else -> Unit
             }
             Log.i("NFC State: ${state.getName()}. $state")
@@ -73,13 +74,13 @@ class NfcViewModel : ViewModel() {
                 nfcTextToWrite.postValue("")
             }
 
-            override fun onError(message: NfcError, throwable: Throwable?) {
-                if (message.isReadError()) {
-                    checkEmptyTag(message)
+            override fun onError(nfcError: NfcError, throwable: Throwable?) {
+                if (nfcError.isReadError()) {
+                    checkEmptyTag(nfcError)
                 } else {
-                    nfcWriteStatus.postValue(message.errorMsg)
+                    nfcWriteStatus.postValue(nfcError.errorMsg)
                 }
-                Log.w("NFC NDEF: ${message.name} ($message)")
+                Log.w("NFC NDEF: ${nfcError.name} ($nfcError)")
             }
         }
     )
@@ -95,13 +96,13 @@ class NfcViewModel : ViewModel() {
                 nfcTextToWrite.postValue("")
             }
 
-            override fun onError(message: NfcError, throwable: Throwable?) {
-                if (message.isReadError()) {
-                    checkEmptyTag(message)
+            override fun onError(nfcError: NfcError, throwable: Throwable?) {
+                if (nfcError.isReadError()) {
+                    checkEmptyTag(nfcError)
                 } else {
-                    nfcWriteStatus.postValue(message.errorMsg)
+                    nfcWriteStatus.postValue(nfcError.errorMsg)
                 }
-                Log.w("NFC NDEF: ${message.name} ($message)")
+                Log.w("NFC NDEF: ${nfcError.name} ($nfcError)")
             }
         }
     )
@@ -120,8 +121,9 @@ class NfcViewModel : ViewModel() {
         return nfcAdmin
     }
 
-    private fun fillTech(tech: List<String>) {
-        val shortTeach = tech
+    private fun fillTech(tag: Tag) {
+        val shortTeach = tag.techList
+            .map { it.substringAfterLast('.') }
             .joinToString(separator = ", ") {
                 it.removePrefix("android.nfc.tech.")
             }

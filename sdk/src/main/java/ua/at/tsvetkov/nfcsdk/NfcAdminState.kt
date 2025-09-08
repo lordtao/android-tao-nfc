@@ -1,5 +1,7 @@
 package ua.at.tsvetkov.nfcsdk
 
+import android.nfc.Tag
+
 /**
  * Created by Alexandr Tsvetkov on 26.08.2025.
  *
@@ -55,8 +57,9 @@ sealed class NfcAdminState(val message: String) {
      * list of these discovered technologies.
      *
      * @param tech A list of strings, where each string is a fully qualified
-     * class name of a discovered NFC technology (e.g., "[android.nfc.tech.NfcA]", "[android.nfc.tech.Ndef]").
+     * class name of a discovered NFC technology (e.g., \"[android.nfc.tech.NfcA]\", \"[android.nfc.tech.Ndef]\").
      */
+    @Deprecated("Not in use in NfcAdmin. Use NfcTagDiscovered instead.")
     class NfcTechDiscovered(val tech: List<String>) :
         NfcAdminState(
             "NFC tech discovered: ${tech.joinToString(", ")}"
@@ -64,7 +67,7 @@ sealed class NfcAdminState(val message: String) {
         /**
          * Extracts and returns the simple names of the discovered NFC technologies.
          *
-         * For example, if a technology is reported as "[android.nfc.tech.NfcA]",
+         * For example, if a technology is reported as \"[android.nfc.tech.NfcA]\",
          * this function will return `NfcA`.
          *
          * @return A list of strings, where each string is the simple class name
@@ -74,7 +77,29 @@ sealed class NfcAdminState(val message: String) {
                 return tech.map { it.substringAfterLast('.') }
             }
         }
+    
+    /**
+     * Represents the state where a complete NFC [android.nfc.Tag] object has been discovered.
+     *
+     * This state is typically triggered when [android.nfc.NfcAdapter.ReaderCallback.onTagDiscovered]
+     * is called by the Android system, providing the full [Tag] object.
+     * The associated [message] in the parent class will indicate that a tag was discovered,
+     * often including its ID (formatted as a hex string).
+     *
+     * @param tag The discovered [android.nfc.Tag] object
+     */
+    class NfcTagDiscovered(val tag: Tag) :
+        NfcAdminState(
+            "NFC Tag discovered: ${tag.id.joinToString("") { "%02X".format(it) }}"
+        )
 
+    /**
+     * Returns the simple class name of the current [NfcAdminState] instance.
+     *
+     * This can be useful for logging or displaying the specific type of the current NFC state.
+     *
+     * @return The simple name of the current NFC state class as a String.
+     */
     fun getName() = this::class.simpleName
 
     /**

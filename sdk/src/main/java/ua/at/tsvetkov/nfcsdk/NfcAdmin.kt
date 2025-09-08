@@ -225,16 +225,17 @@ class NfcAdmin(
 
         if (isAdminLogEnabled) Log.d("Tag discovered: $tag")
         scannedTechs = tag.techList.asList()
-        nfcStateListener?.onNfcStateChanged(NfcAdminState.NfcTechDiscovered(scannedTechs))
+        nfcStateListener?.onNfcStateChanged(NfcAdminState.NfcTagDiscovered(tag))
 
         activity.runOnUiThread {
             handlers
                 .forEach { handler ->
                     if (handler.isSupportTech(scannedTechs)) {
+                        handler.tag = tag
                         if (handler.isHavePreparedDataToWrite()) {
-                            handler.writeDataToTag(tag)
+                            handler.writeDataToTag()
                         } else {
-                            handler.readDataFromTag(tag)
+                            handler.readDataFromTag()
                         }
                     }
                 }

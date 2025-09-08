@@ -40,13 +40,15 @@ abstract class NfcHandler<D, R>(
      * */
     var isLogEnabled = false
 
+    lateinit var tag: Tag
+
     /**
      * Stores the data (in its low-level format [D]) that has been prepared by
      * [prepareToWrite] and is ready to be written to an NFC tag by [writeDataToTag].
      * Subclasses implementing [prepareToWrite] are responsible for populating this field
      * using the provided [preparer].
      */
-    protected var preparedData: D? = null
+    var preparedData: D? = null
 
     /**
      * Prepares the data required to "clears" or "erases" existing content on a tag.
@@ -124,24 +126,21 @@ abstract class NfcHandler<D, R>(
     }
 
     /**
-     * Abstract method to read and process data from the given NFC [Tag].
+     * Abstract method to read and process data from the stored NFC [Tag].
      *
      * Concrete implementations should handle the specifics of interacting with the tag's
      * technology, retrieve raw data, use the [parser] to parse it into structured data of type [R],
      * and then typically communicate the results (or errors) via the [nfcListener].
-     *
-     * @param tag The NFC [Tag] object discovered and to be read from.
      */
-    abstract fun readDataFromTag(tag: Tag)
+    abstract fun readDataFromTag()
 
     /**
-     * Abstract method to write the prepared data to the given NFC [Tag].
+     * Abstract method to write the prepared data to the stored NFC [Tag].
      *
      * Concrete implementations should take the data stored in [preparedData] (which should have
      * been populated by [prepareToWrite]) and write it to the tag using the appropriate
      * NFC technology. Results or errors should be communicated via the [nfcListener].
      *
-     * @param tag The NFC [Tag] object to write data to.
      */
-    abstract fun writeDataToTag(tag: Tag)
+    abstract fun writeDataToTag()
 }

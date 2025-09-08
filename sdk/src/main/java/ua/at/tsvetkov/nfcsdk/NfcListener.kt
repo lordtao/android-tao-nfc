@@ -25,8 +25,8 @@ interface NfcListener<T> {
     /**
      * Called when an event/error occurs during the NFC tag scanning or processing.
      *
-     * @param message An [NfcError] enum value indicating the specific event/error that occurred.
+     * @param nfcError An [NfcError] enum value indicating the specific event/error that occurred.
      * @param throwable A [Throwable] that occurred.
      */
-    fun onError(message: NfcError, throwable: Throwable? = null)
+    fun onError(nfcError: NfcError, throwable: Throwable? = null)
 }
