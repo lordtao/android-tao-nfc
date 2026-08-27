@@ -32,7 +32,7 @@ import ua.at.tsvetkov.util.logger.Log
 class NfcAdmin(
     private val activity: Activity,
     private var nfcStateListener: NfcStateListener? = null,
-    private var isAdminLogEnabled: Boolean = false,
+    private var isAdminLogEnabled: Boolean = false
 ) : NfcAdapter.ReaderCallback {
     private val nfcAdapter: NfcAdapter? by lazy { NfcAdapter.getDefaultAdapter(activity) }
 
@@ -153,6 +153,7 @@ class NfcAdmin(
      * @see onTagDiscovered
      * @see DEFAULT_READER_FLAGS
      */
+    @Suppress("TooGenericExceptionCaught")
     fun enableReaderMode(flags: Int = DEFAULT_READER_FLAGS, isOnSound: Boolean = false, extras: Bundle? = null) {
         val readerFlags: Int = flags or if (!isOnSound) NfcAdapter.FLAG_READER_NO_PLATFORM_SOUNDS else 0
 
@@ -192,6 +193,7 @@ class NfcAdmin(
      *
      * @see NfcAdapter.disableReaderMode
      */
+    @Suppress("TooGenericExceptionCaught")
     fun disableReaderMode() {
         if (nfcAdapter == null) {
             return
@@ -251,10 +253,9 @@ class NfcAdmin(
          * - [NfcAdapter.FLAG_READER_SKIP_NDEF_CHECK]
          */
         const val DEFAULT_READER_FLAGS = NfcAdapter.FLAG_READER_NFC_A or
-                NfcAdapter.FLAG_READER_NFC_B or
-                NfcAdapter.FLAG_READER_NFC_F or
-                NfcAdapter.FLAG_READER_NFC_V or
-                NfcAdapter.FLAG_READER_NFC_BARCODE
-
+            NfcAdapter.FLAG_READER_NFC_B or
+            NfcAdapter.FLAG_READER_NFC_F or
+            NfcAdapter.FLAG_READER_NFC_V or
+            NfcAdapter.FLAG_READER_NFC_BARCODE
     }
 }

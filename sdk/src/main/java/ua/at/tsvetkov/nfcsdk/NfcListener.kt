@@ -6,16 +6,16 @@ package ua.at.tsvetkov.nfcsdk
  * Interface for receiving callbacks about NFC tag scanning events.
  * Implement this interface to handle successful scans and errors.
  *
- * @param T The type of the successfully scanned data.
+ * @param R The type of the successfully scanned data.
  */
-interface NfcListener<T> {
+interface NfcListener<R> {
     /**
      * Called when an NFC tag has been successfully scanned and its data processed.
      *
      * @param result The processed data extracted from the NFC tag. The type of this data
      *               is defined by the implementing [ua.at.tsvetkov.nfcsdk.handler.NfcHandler].
      */
-    fun onRead(result: List<T>)
+    fun onRead(result: List<R>)
 
     /**
      * Called when data has been successfully written to the NFC tag.

@@ -90,7 +90,7 @@ class NfcViewModel : ViewModel() {
             nfcStateListener = stateListener
         )
         nfcAdmin.addHandlers(
-            textHandler,
+            textHandler
 //            uriHandler
 //            nfcMifareUltralightHandler
         )

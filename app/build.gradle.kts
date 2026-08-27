@@ -1,6 +1,5 @@
 plugins {
     alias(libs.plugins.android.application)
-    alias(libs.plugins.kotlin.android)
     alias(libs.plugins.ktlint)
     alias(libs.plugins.detekt)
 }
@@ -13,18 +12,17 @@ ktlint {
 }
 
 detekt {
-    config.setFrom(files("$projectDir/detekt.yml"))
     buildUponDefaultConfig = true
 }
 
 android {
     namespace = "ua.at.tsvetkov.nfcsdk.demo"
-    compileSdk = 36
+    compileSdk = 37
 
     defaultConfig {
         applicationId = "ua.at.tsvetkov.nfcsdk.demo"
         minSdk = 26
-        targetSdk = 36
+        targetSdk = 37
         versionCode = 1
         versionName = "1.0"
 

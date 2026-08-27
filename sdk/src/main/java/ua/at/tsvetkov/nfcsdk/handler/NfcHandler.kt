@@ -32,9 +32,9 @@ import ua.at.tsvetkov.nfcsdk.preparer.NfcDataPreparer
 abstract class NfcHandler<D, R>(
     var parser: NfcDataParser<D, R>,
     var preparer: NfcDataPreparer<R, D>,
-    var nfcListener: NfcListener<R>,
+    var nfcListener: NfcListener<R>
 ) {
-    
+
     /**
      * Controls whether this NFC handler is currently active and should process NFC events.
      *

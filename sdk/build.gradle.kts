@@ -2,7 +2,6 @@ import java.util.Date
 
 plugins {
     alias(libs.plugins.android.library)
-    alias(libs.plugins.kotlin.android)
     alias(libs.plugins.ktlint)
     alias(libs.plugins.detekt)
     `maven-publish`
@@ -28,15 +27,17 @@ fun TaskContainer.registerCopyAarTask(variant: String) {
     register<Delete>("deleteOld${capVariant}Aar") {
         group = "aar"
         description = "Удаляет ранее собранные AAR в ../aar для $variant"
-        delete(fileTree("../aar") {
-            include("$libName-$variant*.aar")
-        })
+        delete(
+            fileTree("../aar") {
+                include("$libName-$variant*.aar")
+            }
+        )
     }
 
     register<Copy>("copy${capVariant}Aar") {
         group = "aar"
         description = "Copy AAR $variant with version $versionName to ../aar"
-        dependsOn("assemble${capVariant}")
+        dependsOn("assemble$capVariant")
         dependsOn("deleteOld${capVariant}Aar")
         val aarFile = file("build/outputs/aar/$libName-$versionName-$variant.aar")
         doFirst {
@@ -73,13 +74,12 @@ ktlint {
 }
 
 detekt {
-    config.setFrom(files("$projectDir/detekt.yml"))
     buildUponDefaultConfig = true
 }
 
 android {
     namespace = "ua.at.tsvetkov.nfcsdk"
-    compileSdk = 36
+    compileSdk = 37
 
     defaultConfig {
         minSdk = 26
@@ -95,7 +95,7 @@ android {
         getByName("release") {
             isMinifyEnabled = false
             isShrinkResources = false
-            proguardFiles(getDefaultProguardFile("proguard-android.txt"), "proguard-rules.txt")
+            proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.txt")
         }
     }
     buildFeatures {
@@ -144,10 +144,9 @@ afterEvaluate {
     }
 }
 
-
 val repo = "android-tao-nfc"
 val repoDescription = "The NFC SDK library simplifies Near Field Communication (NFC) " +
-        "interactions in Android applications."
+    "interactions in Android applications."
 
 val owner = "lordtao"
 val libGroupId = "ua.at.tsvetkov"

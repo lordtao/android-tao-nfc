@@ -20,6 +20,7 @@ class NfcNdefTextDataParser : NfcDataParser<NdefMessage, String> {
         const val LENGTH_OF_THE_LANGUAGE_CODE = 0x3F
     }
 
+    @Suppress("TooGenericExceptionCaught")
     override fun parse(data: NdefMessage): List<String> {
         val list = mutableListOf<String>()
         data

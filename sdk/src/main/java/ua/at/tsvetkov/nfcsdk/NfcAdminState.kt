@@ -74,9 +74,7 @@ sealed class NfcAdminState(val message: String) {
          * @return A list of strings, where each string is the simple class name
          * of a discovered NFC technology.
          */
-        fun getTechNames(): List<String> {
-            return tech.map { it.substringAfterLast('.') }
-        }
+        fun getTechNames(): List<String> = tech.map { it.substringAfterLast('.') }
     }
 
     /**
@@ -120,7 +118,6 @@ sealed class NfcAdminState(val message: String) {
          * Example: `["NfcA", "MifareUltralight", "Ndef"]`
          */
         val techNames = tag.techList.map { it.substringAfterLast('.') }
-
     }
 
     /**
